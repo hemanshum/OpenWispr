@@ -750,6 +750,21 @@ function drawWave(amplitudeMult, baseAmp, frequency, color, opacity) {
   ctx.globalAlpha = 1.0;
 }
 
+async function updateLastPreparedFromHistory() {
+  try {
+    const entries = await invoke("get_history");
+    if (entries && entries.length > 0) {
+      lastPreparedText.value = entries[0].text;
+      lastPreparedContainer.style.display = "flex";
+    } else {
+      lastPreparedText.value = "";
+      lastPreparedContainer.style.display = "none";
+    }
+  } catch (err) {
+    console.error("Failed to load history for last prepared text:", err);
+  }
+}
+
 // Initializations
 async function init() {
   await initConfig();
@@ -775,7 +790,8 @@ async function init() {
       try {
         await invoke("clear_all_history");
         showToast("Cleared all history");
-        loadHistory();
+        await loadHistory();
+        await updateLastPreparedFromHistory();
       } catch (err) {
         showToast(`Failed to clear history: ${err}`, true);
       }
@@ -783,6 +799,7 @@ async function init() {
   });
   
   draw();
+  await updateLastPreparedFromHistory();
 }
 
 async function loadHistory() {
@@ -859,7 +876,8 @@ function renderHistory(entries) {
       try {
         await invoke("delete_history_entry", { id: entry.id });
         showToast("Deleted entry");
-        loadHistory();
+        await loadHistory();
+        await updateLastPreparedFromHistory();
       } catch (err) {
         showToast(`Failed to delete: ${err}`, true);
       }

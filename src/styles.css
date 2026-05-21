@@ -371,7 +371,6 @@ body::after {
   align-items: center;
   gap: 15px;
   text-align: left;
-  margin-bottom: 10px;
 }
 
 .keycap {
@@ -803,7 +802,6 @@ select.form-input option {
   display: flex;
   flex-direction: column;
   text-align: left;
-  margin-top: 10px;
   overflow: hidden;
   transition: all 0.3s ease;
 }
@@ -1084,7 +1082,6 @@ select.form-input option {
   display: flex;
   flex-direction: column;
   text-align: left;
-  margin-bottom: 4px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
