@@ -24,7 +24,7 @@ impl AudioRecorder {
         }
     }
 
-    pub fn start_recording(&mut self, device_name: Option<&str>) -> Result<(), String> {
+    pub fn start_recording(&mut self, app_handle: AppHandle, device_name: Option<&str>) -> Result<(), String> {
         if self.stream.is_some() {
             return Err("An audio stream is already active".to_string());
         }
@@ -68,7 +68,9 @@ impl AudioRecorder {
             s.clear();
         }
 
+        let (tx, rx) = std::sync::mpsc::channel::<f32>();
         let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
+        let tx_clone = tx.clone();
 
         let stream = match config.sample_format() {
             cpal::SampleFormat::F32 => device.build_input_stream(
@@ -76,6 +78,10 @@ impl AudioRecorder {
                 move |data: &[f32], _: &cpal::InputCallbackInfo| {
                     if let Ok(mut s) = samples.lock() {
                         s.extend_from_slice(data);
+                    }
+                    if !data.is_empty() {
+                        let peak = data.iter().map(|&x| x.abs()).fold(0.0f32, f32::max);
+                        let _ = tx_clone.send(peak);
                     }
                 },
                 err_fn,
@@ -86,6 +92,10 @@ impl AudioRecorder {
                 move |data: &[i16], _: &cpal::InputCallbackInfo| {
                     if let Ok(mut s) = samples.lock() {
                         s.extend(data.iter().map(|&x| x as f32 / i16::MAX as f32));
+                    }
+                    if !data.is_empty() {
+                        let peak = data.iter().map(|&x| (x as f32 / i16::MAX as f32).abs()).fold(0.0f32, f32::max);
+                        let _ = tx_clone.send(peak);
                     }
                 },
                 err_fn,
@@ -99,6 +109,12 @@ impl AudioRecorder {
                             (x as f32 - u16::MAX as f32 / 2.0) / (u16::MAX as f32 / 2.0)
                         }));
                     }
+                    if !data.is_empty() {
+                        let peak = data.iter().map(|&x| {
+                            ((x as f32 - u16::MAX as f32 / 2.0) / (u16::MAX as f32 / 2.0)).abs()
+                        }).fold(0.0f32, f32::max);
+                        let _ = tx_clone.send(peak);
+                    }
                 },
                 err_fn,
                 None,
@@ -109,6 +125,32 @@ impl AudioRecorder {
 
         stream.play().map_err(|e| format!("Failed to start stream: {}", e))?;
         self.stream = Some(SendStream(stream));
+
+        let app_handle_clone = app_handle.clone();
+        std::thread::spawn(move || {
+            loop {
+                match rx.recv_timeout(std::time::Duration::from_millis(100)) {
+                    Ok(first_val) => {
+                        let mut max_val = first_val;
+                        while let Ok(val) = rx.try_recv() {
+                            if val > max_val {
+                                max_val = val;
+                            }
+                        }
+                        let level = (max_val * 100.0) as u32;
+                        let level = level.min(100);
+                        let _ = app_handle_clone.emit("recording-mic-level", level);
+                    }
+                    Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                        let _ = app_handle_clone.emit("recording-mic-level", 0);
+                    }
+                    Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                        break;
+                    }
+                }
+            }
+            let _ = app_handle_clone.emit("recording-mic-level", 0);
+        });
 
         Ok(())
     }

@@ -21,6 +21,7 @@ const statusBadge = document.getElementById("status-badge");
 const statusLabel = document.getElementById("status-label");
 
 const inputApiKey = document.getElementById("api-key");
+const apiKeyGroup = document.getElementById("api-key-group");
 const selectProvider = document.getElementById("provider-select");
 const groupGemini = document.getElementById("gemini-settings");
 const selectModel = document.getElementById("model-select");
@@ -46,6 +47,8 @@ let isPasswordVisible = false;
 let phase = 0;
 let isTestingMic = false;
 let micLevelUnlisten = null;
+let recordingMicLevel = 0;
+let currentAmpScale = 0.1;
 
 // Tab Switcher
 tabDash.addEventListener("click", () => {
@@ -100,9 +103,11 @@ selectProvider.addEventListener("change", () => {
   if (selectProvider.value === "ollama") {
     groupOllama.style.display = "block";
     groupGemini.style.display = "none";
+    apiKeyGroup.style.display = "none";
   } else {
     groupOllama.style.display = "none";
     groupGemini.style.display = "block";
+    apiKeyGroup.style.display = "flex";
   }
 });
 
@@ -252,9 +257,11 @@ async function initConfig() {
     if (savedProvider === "ollama") {
       groupOllama.style.display = "block";
       groupGemini.style.display = "none";
+      apiKeyGroup.style.display = "none";
     } else {
       groupOllama.style.display = "none";
       groupGemini.style.display = "block";
+      apiKeyGroup.style.display = "flex";
     }
 
     inputOllamaUrl.value = config.ollama_url || "http://localhost:11434";
@@ -304,6 +311,14 @@ function updateStatusUI(status) {
 // Listen for status events from Rust
 listen("status-changed", (event) => {
   updateStatusUI(event.payload);
+  if (event.payload !== "Recording") {
+    recordingMicLevel = 0;
+  }
+});
+
+// Listen for mic levels during recording
+listen("recording-mic-level", (event) => {
+  recordingMicLevel = event.payload; // 0 to 100
 });
 
 // Canvas resizing
@@ -323,26 +338,33 @@ function draw() {
   phase += 0.05;
 
   if (currentStatus === "Recording") {
+    const targetScale = 0.1 + (recordingMicLevel / 100.0) * 0.9;
+    // Smooth transition: 85% of current scale + 15% of target scale
+    currentAmpScale += (targetScale - currentAmpScale) * 0.15;
+    
     // 3 layered moving gradient waves
-    drawWave(3, 28, 0.015, "#a855f7", 0.4);
-    drawWave(2, 18, 0.025, "#6366f1", 0.3);
-    drawWave(1.5, 10, 0.035, "#06b6d4", 0.2);
-  } else if (currentStatus === "Transcribing" || currentStatus === "Pasting") {
-    // Draw scanning laser pulse wave
-    drawWave(1.0, 8, 0.01, "#a855f7", 0.25);
-    const scanX = (Math.sin(phase * 0.5) + 1) * 0.5 * width;
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = "#06b6d4";
-    ctx.strokeStyle = "rgba(6, 182, 212, 0.8)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(scanX, 10);
-    ctx.lineTo(scanX, height - 10);
-    ctx.stroke();
-    ctx.shadowBlur = 0;
+    drawWave(3, 28 * currentAmpScale, 0.015, "#a855f7", 0.4);
+    drawWave(2, 18 * currentAmpScale, 0.025, "#6366f1", 0.3);
+    drawWave(1.5, 10 * currentAmpScale, 0.035, "#06b6d4", 0.2);
   } else {
-    // Idle calm wave
-    drawWave(0.3, 3, 0.008, "#94a3b8", 0.15);
+    currentAmpScale = 0.1; // reset
+    if (currentStatus === "Transcribing" || currentStatus === "Pasting") {
+      // Draw scanning laser pulse wave
+      drawWave(1.0, 8, 0.01, "#a855f7", 0.25);
+      const scanX = (Math.sin(phase * 0.5) + 1) * 0.5 * width;
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = "#06b6d4";
+      ctx.strokeStyle = "rgba(6, 182, 212, 0.8)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(scanX, 10);
+      ctx.lineTo(scanX, height - 10);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    } else {
+      // Idle calm wave
+      drawWave(0.3, 3, 0.008, "#94a3b8", 0.15);
+    }
   }
 
   requestAnimationFrame(draw);

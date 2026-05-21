@@ -64,7 +64,7 @@ fn start_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<
         Some(api_config.audio_device.as_str())
     };
 
-    recorder.start_recording(device_name)?;
+    recorder.start_recording(app_handle.clone(), device_name)?;
     state.is_recording.store(true, Ordering::SeqCst);
     update_status(app_handle, state, "Recording");
     Ok(())
