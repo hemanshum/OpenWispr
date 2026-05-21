@@ -258,3 +258,57 @@ pub async fn refine_with_gemini(
 
     Ok(refined_text.trim().to_string())
 }
+
+pub async fn transcribe_local_whisper(
+    wav_path: &str,
+    model: &str,
+) -> Result<String, String> {
+    use std::path::Path;
+    use tokio::process::Command;
+
+    let wav_path_buf = Path::new(wav_path);
+    let file_stem = wav_path_buf
+        .file_stem()
+        .ok_or_else(|| "Invalid WAV file path".to_string())?
+        .to_string_lossy();
+    
+    let parent_dir = wav_path_buf
+        .parent()
+        .ok_or_else(|| "Invalid parent directory for WAV file".to_string())?;
+    
+    let output_txt_path = parent_dir.join(format!("{}.txt", file_stem));
+    let parent_dir_str = parent_dir.to_string_lossy().to_string();
+
+    let mut command = Command::new("whisper");
+    command
+        .arg(wav_path)
+        .arg("--model")
+        .arg(model)
+        .arg("--output_dir")
+        .arg(&parent_dir_str)
+        .arg("--output_format")
+        .arg("txt")
+        .env("PYTHONIOENCODING", "utf-8");
+
+    let output = command
+        .output()
+        .await
+        .map_err(|e| format!("Failed to run local Whisper executable. Is it installed and on PATH? Error: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Local Whisper command failed: {}", stderr));
+    }
+
+    if !output_txt_path.exists() {
+        return Err("Local Whisper transcription completed but the output text file was not found".to_string());
+    }
+
+    let transcribed_text = fs::read_to_string(&output_txt_path)
+        .map_err(|e| format!("Failed to read local Whisper output file: {}", e))?;
+
+    let _ = fs::remove_file(output_txt_path);
+
+    Ok(transcribed_text.trim().to_string())
+}
+

@@ -27,6 +27,8 @@ const groupOpenAi = document.getElementById("openai-settings");
 const inputOpenAiApiKey = document.getElementById("openai-api-key");
 const btnToggleOpenAiKey = document.getElementById("btn-toggle-openai-key");
 const inputOpenAiModel = document.getElementById("openai-model");
+const groupLocalWhisper = document.getElementById("local-whisper-settings");
+const selectLocalWhisperModel = document.getElementById("local-whisper-model");
 
 const selectProvider = document.getElementById("provider-select");
 const groupGemini = document.getElementById("gemini-settings");
@@ -121,8 +123,13 @@ function updateSettingsVisibility() {
   // 1. Transcription Provider Inputs visibility
   if (transProvider === "openai") {
     groupOpenAi.style.display = "block";
+    groupLocalWhisper.style.display = "none";
+  } else if (transProvider === "local_whisper") {
+    groupOpenAi.style.display = "none";
+    groupLocalWhisper.style.display = "block";
   } else {
     groupOpenAi.style.display = "none";
+    groupLocalWhisper.style.display = "none";
   }
 
   // 2. Gemini API Key visibility
@@ -200,6 +207,7 @@ btnSaveSettings.addEventListener("click", async () => {
     transcription_provider: selectTranscriptionProvider.value,
     openai_api_key: inputOpenAiApiKey.value.trim(),
     openai_model: inputOpenAiModel.value.trim(),
+    local_whisper_model: selectLocalWhisperModel.value,
   };
 
   try {
@@ -308,6 +316,7 @@ async function initConfig() {
     selectTranscriptionProvider.value = config.transcription_provider || "gemini";
     inputOpenAiApiKey.value = config.openai_api_key || "";
     inputOpenAiModel.value = config.openai_model || "whisper-1";
+    selectLocalWhisperModel.value = config.local_whisper_model || "base";
 
     const savedProvider = config.provider || "gemini";
     selectProvider.value = savedProvider;

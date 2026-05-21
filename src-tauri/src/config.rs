@@ -24,6 +24,8 @@ pub struct AppConfig {
     pub openai_api_key: String,
     #[serde(default = "default_openai_model")]
     pub openai_model: String,
+    #[serde(default = "default_local_whisper_model")]
+    pub local_whisper_model: String,
 }
 
 fn default_model() -> String {
@@ -58,6 +60,10 @@ fn default_openai_model() -> String {
     "whisper-1".to_string()
 }
 
+fn default_local_whisper_model() -> String {
+    "base".to_string()
+}
+
 impl AppConfig {
     pub fn default() -> Self {
         Self {
@@ -71,6 +77,7 @@ impl AppConfig {
             transcription_provider: "gemini".to_string(),
             openai_api_key: "".to_string(),
             openai_model: "whisper-1".to_string(),
+            local_whisper_model: "base".to_string(),
         }
     }
 

@@ -98,6 +98,7 @@
                 <select id="transcription-provider-select" class="form-input">
                   <option value="gemini">Google Gemini (Cloud)</option>
                   <option value="openai">OpenAI Whisper (Cloud)</option>
+                  <option value="local_whisper">Local Whisper (Offline)</option>
                 </select>
               </div>
 
@@ -141,6 +142,21 @@
                     class="form-input"
                     placeholder="whisper-1"
                   />
+                </div>
+              </div>
+
+              <!-- Local Whisper Transcription Settings -->
+              <div id="local-whisper-settings" style="display: none;">
+                <div class="form-group" style="margin-top: 4px;">
+                  <label class="form-label" for="local-whisper-model">Local Whisper Model</label>
+                  <select id="local-whisper-model" class="form-input">
+                    <option value="tiny">Tiny (Fastest, lowest accuracy)</option>
+                    <option value="base">Base (Fast, recommended)</option>
+                    <option value="small">Small (Balanced)</option>
+                    <option value="medium">Medium (Accurate, slower)</option>
+                    <option value="large-v3">Large V3 (Most accurate, slowest)</option>
+                    <option value="turbo">Turbo (Modern large variant)</option>
+                  </select>
                 </div>
               </div>
 

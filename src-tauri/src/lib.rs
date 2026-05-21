@@ -149,8 +149,42 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
         let ollama_url = api_config.ollama_url.to_string();
         let ollama_model = api_config.ollama_model.to_string();
         let openai_model = api_config.openai_model.to_string();
+        let local_whisper_model = api_config.local_whisper_model.to_string();
 
         let result = match tx_provider.as_str() {
+            "local_whisper" => {
+                match crate::api::transcribe_local_whisper(
+                    &temp_file_str,
+                    &local_whisper_model,
+                ).await {
+                    Ok(raw_text) => {
+                        if raw_text.is_empty() {
+                            Ok("".to_string())
+                        } else {
+                            match provider.as_str() {
+                                "ollama" => {
+                                    crate::api::refine_with_ollama(
+                                        &ollama_url,
+                                        &ollama_model,
+                                        &prompt,
+                                        &raw_text,
+                                    ).await
+                                }
+                                "gemini" => {
+                                    crate::api::refine_with_gemini(
+                                        &api_key,
+                                        &model,
+                                        &prompt,
+                                        &raw_text,
+                                    ).await
+                                }
+                                _ => Ok(raw_text),
+                            }
+                        }
+                    }
+                    Err(e) => Err(e),
+                }
+            }
             "openai" => {
                 match crate::api::transcribe_openai(
                     &temp_file_str,
