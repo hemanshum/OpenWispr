@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::thread;
 use windows_sys::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
-use windows_sys::Win32::UI::Input::KeyboardAndMouse::VK_CAPITAL;
+use windows_sys::Win32::UI::Input::KeyboardAndMouse::{VK_LCONTROL, VK_RCONTROL};
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     CallNextHookEx, GetMessageW, PostThreadMessageW, SetWindowsHookExW, UnhookWindowsHookEx,
     HHOOK, KBDLLHOOKSTRUCT, MSG, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP, WM_QUIT,
@@ -13,11 +13,13 @@ static mut HOOK_HANDLE: HHOOK = 0 as HHOOK;
 static mut HOOK_THREAD_ID: u32 = 0;
 static mut SENDER: Option<mpsc::Sender<HotkeyEvent>> = None;
 static KEY_PRESSED: AtomicBool = AtomicBool::new(false);
+static CANCELLED: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug)]
 pub enum HotkeyEvent {
     Pressed,
     Released,
+    Cancelled,
 }
 
 pub struct HotkeyListener {
@@ -91,27 +93,39 @@ unsafe extern "system" fn low_level_keyboard_proc(
     if n_code >= 0 {
         let kbd_struct = *(l_param as *const KBDLLHOOKSTRUCT);
 
-        // Intercept Caps Lock (VK_CAPITAL)
-        if kbd_struct.vkCode == VK_CAPITAL as u32 {
+        let vk = kbd_struct.vkCode;
+        let is_ctrl = vk == VK_LCONTROL as u32 || vk == VK_RCONTROL as u32;
+
+        if is_ctrl {
             let is_down = w_param == WM_KEYDOWN as usize || w_param == WM_SYSKEYDOWN as usize;
             let is_up = w_param == WM_KEYUP as usize || w_param == WM_SYSKEYUP as usize;
 
             if is_down {
                 let already_pressed = KEY_PRESSED.swap(true, Ordering::SeqCst);
                 if !already_pressed {
+                    CANCELLED.store(false, Ordering::SeqCst);
                     if let Some(ref tx) = SENDER {
                         let _ = tx.send(HotkeyEvent::Pressed);
                     }
                 }
-                // Return 1 to swallow keypress (prevents caps lock toggling)
-                return 1;
             } else if is_up {
+                let was_cancelled = CANCELLED.swap(false, Ordering::SeqCst);
                 KEY_PRESSED.store(false, Ordering::SeqCst);
-                if let Some(ref tx) = SENDER {
-                    let _ = tx.send(HotkeyEvent::Released);
+                if !was_cancelled {
+                    if let Some(ref tx) = SENDER {
+                        let _ = tx.send(HotkeyEvent::Released);
+                    }
                 }
-                // Return 1 to swallow key release
-                return 1;
+            }
+        } else {
+            let is_down = w_param == WM_KEYDOWN as usize || w_param == WM_SYSKEYDOWN as usize;
+            if is_down && KEY_PRESSED.load(Ordering::SeqCst) {
+                let already_cancelled = CANCELLED.swap(true, Ordering::SeqCst);
+                if !already_cancelled {
+                    if let Some(ref tx) = SENDER {
+                        let _ = tx.send(HotkeyEvent::Cancelled);
+                    }
+                }
             }
         }
     }

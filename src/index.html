@@ -49,9 +49,25 @@
 
             <!-- Help Tip card -->
             <div class="instruction-card">
-              <div class="keycap" id="trigger-keycap">CAPS LOCK</div>
+              <div class="keycap" id="trigger-keycap">CTRL</div>
               <div class="instruction-text">
                 Hold the trigger key down to <strong>record voice</strong>. Release the key to transcribe, clean, and <strong>paste text</strong> instantly.
+              </div>
+            </div>
+
+            <!-- Last Prepared Text Card -->
+            <div class="last-prepared-card" id="last-prepared-container" style="display: none;">
+              <div class="last-prepared-header">
+                <span class="last-prepared-title">Last Prepared Text</span>
+                <button class="copy-btn" id="btn-copy-last" title="Copy to Clipboard">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                  </svg>
+                  <span>Copy</span>
+                </button>
+              </div>
+              <div class="last-prepared-body">
+                <textarea id="last-prepared-text" readonly placeholder="Your transcribed text will appear here..."></textarea>
               </div>
             </div>
           </div>

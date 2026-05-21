@@ -63,6 +63,10 @@ const inputCustomApiModel = document.getElementById("custom-api-model");
 const toastAlert = document.getElementById("toast-alert");
 const toastText = document.getElementById("toast-text");
 
+const lastPreparedContainer = document.getElementById("last-prepared-container");
+const lastPreparedText = document.getElementById("last-prepared-text");
+const btnCopyLast = document.getElementById("btn-copy-last");
+
 const canvas = document.getElementById("canvas-visualizer");
 const ctx = canvas.getContext("2d");
 
@@ -83,6 +87,7 @@ tabDash.addEventListener("click", () => {
   tabSettings.classList.remove("active");
   contentDash.classList.add("active");
   contentSettings.classList.remove("active");
+  invoke("set_window_focusable", { focusable: false }).catch((err) => console.error(err));
 });
 
 tabSettings.addEventListener("click", () => {
@@ -90,6 +95,7 @@ tabSettings.addEventListener("click", () => {
   tabDash.classList.remove("active");
   contentSettings.classList.add("active");
   contentDash.classList.remove("active");
+  invoke("set_window_focusable", { focusable: true }).catch((err) => console.error(err));
 });
 
 // Sub-Tab Switcher inside Settings
@@ -522,6 +528,28 @@ listen("recording-mic-level", (event) => {
   recordingMicLevel = event.payload; // 0 to 100
 });
 
+// Listen for text-prepared events from Rust backend
+listen("text-prepared", (event) => {
+  const preparedText = event.payload;
+  if (preparedText && preparedText.trim()) {
+    lastPreparedText.value = preparedText;
+    lastPreparedContainer.style.display = "flex";
+  }
+});
+
+// Copy Last Prepared Text handler
+btnCopyLast.addEventListener("click", async () => {
+  const text = lastPreparedText.value;
+  if (text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast("Copied to clipboard!");
+    } catch (err) {
+      showToast("Failed to copy text: " + err, true);
+    }
+  }
+});
+
 // Canvas resizing
 function resizeCanvas() {
   canvas.width = canvas.parentElement.clientWidth;
@@ -606,6 +634,9 @@ async function init() {
     const status = await invoke("get_status");
     updateStatusUI(status);
   } catch (_) {}
+  
+  // Set window non-focusable on start (since dashboard is active)
+  invoke("set_window_focusable", { focusable: false }).catch((err) => console.error(err));
   
   draw();
 }

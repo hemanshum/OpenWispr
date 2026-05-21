@@ -239,6 +239,8 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
                     return;
                 }
 
+                let _ = app_handle_clone.emit("text-prepared", transcribed_text.clone());
+
                 update_status(&app_handle_clone, &app_state, "Pasting");
                 match crate::injector::inject_text(&transcribed_text) {
                     Ok(_) => {
@@ -262,6 +264,20 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
 
         let _ = std::fs::remove_file(temp_file_str);
     });
+
+    Ok(())
+}
+
+fn cancel_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(), String> {
+    if !state.is_recording.load(Ordering::SeqCst) {
+        return Ok(());
+    }
+
+    state.is_recording.store(false, Ordering::SeqCst);
+    update_status(app_handle, state, "Idle");
+
+    let mut recorder = state.recorder.lock().map_err(|e| format!("Lock error: {}", e))?;
+    let _ = recorder.cancel_recording();
 
     Ok(())
 }
@@ -339,6 +355,8 @@ pub fn run() {
         .setup(|app| {
             let app_handle = app.handle().clone();
             
+            crate::injector::start_focus_tracker();
+
             let listener = HotkeyListener::start(move |event| {
                 let app_state = app_handle.state::<AppState>();
                 match event {
@@ -347,6 +365,9 @@ pub fn run() {
                     }
                     HotkeyEvent::Released => {
                         let _ = stop_recording_internal(&app_handle, &app_state);
+                    }
+                    HotkeyEvent::Cancelled => {
+                        let _ = cancel_recording_internal(&app_handle, &app_state);
                     }
                 }
             });
@@ -364,7 +385,8 @@ pub fn run() {
             manual_trigger_stop,
             get_audio_devices,
             start_mic_test,
-            stop_mic_test
+            stop_mic_test,
+            set_window_focusable
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -373,4 +395,9 @@ pub fn run() {
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
+}
+
+#[tauri::command]
+fn set_window_focusable(window: tauri::Window, focusable: bool) -> Result<(), String> {
+    window.set_focusable(focusable).map_err(|e| e.to_string())
 }

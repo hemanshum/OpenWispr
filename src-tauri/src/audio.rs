@@ -211,6 +211,18 @@ impl AudioRecorder {
         Ok(())
     }
 
+    pub fn cancel_recording(&mut self) -> Result<(), String> {
+        if let Some(send_stream) = self.stream.take() {
+            drop(send_stream.0);
+        } else {
+            return Err("Not recording".to_string());
+        }
+        if let Ok(mut s) = self.samples.lock() {
+            s.clear();
+        }
+        Ok(())
+    }
+
     pub fn start_mic_test(&mut self, app_handle: AppHandle, device_name: Option<&str>) -> Result<(), String> {
         if self.stream.is_some() {
             return Err("An audio stream is already active".to_string());

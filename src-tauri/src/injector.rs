@@ -1,11 +1,83 @@
 use std::thread;
 use std::time::Duration;
+use std::sync::atomic::{AtomicIsize, Ordering};
 use arboard::Clipboard;
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
-    SendInput, INPUT, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, VK_CONTROL, VK_V,
+    SendInput, INPUT, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, KEYEVENTF_UNICODE, VK_CONTROL, VK_V,
 };
 
-pub fn inject_text(text: &str) -> Result<(), String> {
+static LAST_ACTIVE_HWND: AtomicIsize = AtomicIsize::new(0);
+
+pub fn start_focus_tracker() {
+    thread::spawn(|| {
+        unsafe {
+            let current_pid = windows_sys::Win32::System::Threading::GetCurrentProcessId();
+            loop {
+                let hwnd = windows_sys::Win32::UI::WindowsAndMessaging::GetForegroundWindow();
+                if hwnd != 0 {
+                    let mut pid = 0;
+                    windows_sys::Win32::UI::WindowsAndMessaging::GetWindowThreadProcessId(hwnd, &mut pid);
+                    if pid != current_pid {
+                        LAST_ACTIVE_HWND.store(hwnd, Ordering::SeqCst);
+                    }
+                }
+                thread::sleep(Duration::from_millis(100));
+            }
+        }
+    });
+}
+
+fn inject_via_unicode(text: &str) -> Result<(), String> {
+    let utf16_chars: Vec<u16> = text.encode_utf16().collect();
+    if utf16_chars.is_empty() {
+        return Ok(());
+    }
+
+    let mut inputs: Vec<INPUT> = Vec::with_capacity(utf16_chars.len() * 2);
+    for &ch in &utf16_chars {
+        // Down
+        let mut down: INPUT = unsafe { std::mem::zeroed() };
+        down.r#type = INPUT_KEYBOARD;
+        down.Anonymous.ki = KEYBDINPUT {
+            wVk: 0,
+            wScan: ch,
+            dwFlags: KEYEVENTF_UNICODE,
+            time: 0,
+            dwExtraInfo: 0,
+        };
+        inputs.push(down);
+
+        // Up
+        let mut up: INPUT = unsafe { std::mem::zeroed() };
+        up.r#type = INPUT_KEYBOARD;
+        up.Anonymous.ki = KEYBDINPUT {
+            wVk: 0,
+            wScan: ch,
+            dwFlags: KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
+            time: 0,
+            dwExtraInfo: 0,
+        };
+        inputs.push(up);
+    }
+
+    unsafe {
+        let sent = SendInput(
+            inputs.len() as u32,
+            inputs.as_ptr(),
+            std::mem::size_of::<INPUT>() as i32,
+        );
+        if sent == 0 {
+            let err = windows_sys::Win32::Foundation::GetLastError();
+            return Err(format!("SendInput returned 0. Last error: {}", err));
+        }
+        if sent != inputs.len() as u32 {
+            return Err(format!("Failed to send all Unicode inputs. Sent {}/{}", sent, inputs.len()));
+        }
+    }
+    Ok(())
+}
+
+fn inject_via_clipboard(text: &str) -> Result<(), String> {
     let mut clipboard = Clipboard::new().map_err(|e| format!("Failed to open clipboard: {}", e))?;
 
     // Save current clipboard content if it is text
@@ -77,4 +149,25 @@ pub fn inject_text(text: &str) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+pub fn inject_text(text: &str) -> Result<(), String> {
+    // Restore focus to the last active window before injecting
+    let target_hwnd = LAST_ACTIVE_HWND.load(Ordering::SeqCst);
+    if target_hwnd != 0 {
+        unsafe {
+            windows_sys::Win32::UI::WindowsAndMessaging::SetForegroundWindow(target_hwnd);
+            // Give Windows a tiny moment to switch focus
+            thread::sleep(Duration::from_millis(50));
+        }
+    }
+
+    // Try direct Unicode SendInput first
+    match inject_via_unicode(text) {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            eprintln!("Direct Unicode injection failed: {}. Falling back to clipboard injection.", e);
+            inject_via_clipboard(text)
+        }
+    }
 }

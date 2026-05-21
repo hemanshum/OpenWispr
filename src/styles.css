@@ -71,7 +71,7 @@ body::after {
 
 .window-frame {
   width: 620px;
-  height: 480px;
+  height: 500px;
   background: var(--glass-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -772,4 +772,94 @@ select.form-input option {
   font-size: 0.8rem;
   color: #94a3b8;
   line-height: 1.45;
+}
+
+/* Last Prepared Text Card Styles */
+.last-prepared-card {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  margin-top: 10px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.last-prepared-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.last-prepared-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #a855f7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.copy-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.copy-btn:hover {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.3);
+  color: #fff;
+}
+
+.copy-btn svg {
+  color: #94a3b8;
+  transition: color 0.2s ease;
+}
+
+.copy-btn:hover svg {
+  color: #fff;
+}
+
+.last-prepared-body {
+  padding: 10px 16px;
+}
+
+.last-prepared-body textarea {
+  width: 100%;
+  height: 48px;
+  background: transparent;
+  border: none;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  line-height: 1.4;
+  padding: 0;
+  margin: 0;
+}
+
+.last-prepared-body textarea::-webkit-scrollbar {
+  width: 4px;
+}
+
+.last-prepared-body textarea::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
 }
