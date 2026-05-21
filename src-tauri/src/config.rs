@@ -28,6 +28,18 @@ pub struct AppConfig {
     pub local_whisper_model: String,
     #[serde(default = "default_transcription_language")]
     pub transcription_language: String,
+    #[serde(default = "default_openai_refine_model")]
+    pub openai_refine_model: String,
+    #[serde(default = "default_openrouter_api_key")]
+    pub openrouter_api_key: String,
+    #[serde(default = "default_openrouter_model")]
+    pub openrouter_model: String,
+    #[serde(default = "default_custom_api_url")]
+    pub custom_api_url: String,
+    #[serde(default = "default_custom_api_key")]
+    pub custom_api_key: String,
+    #[serde(default = "default_custom_api_model")]
+    pub custom_api_model: String,
 }
 
 fn default_model() -> String {
@@ -70,6 +82,30 @@ fn default_transcription_language() -> String {
     "auto".to_string()
 }
 
+fn default_openai_refine_model() -> String {
+    "gpt-4o-mini".to_string()
+}
+
+fn default_openrouter_api_key() -> String {
+    "".to_string()
+}
+
+fn default_openrouter_model() -> String {
+    "google/gemini-2.5-flash".to_string()
+}
+
+fn default_custom_api_url() -> String {
+    "".to_string()
+}
+
+fn default_custom_api_key() -> String {
+    "".to_string()
+}
+
+fn default_custom_api_model() -> String {
+    "".to_string()
+}
+
 impl AppConfig {
     pub fn default() -> Self {
         Self {
@@ -85,6 +121,12 @@ impl AppConfig {
             openai_model: "whisper-1".to_string(),
             local_whisper_model: "base".to_string(),
             transcription_language: "auto".to_string(),
+            openai_refine_model: "gpt-4o-mini".to_string(),
+            openrouter_api_key: "".to_string(),
+            openrouter_model: "google/gemini-2.5-flash".to_string(),
+            custom_api_url: "".to_string(),
+            custom_api_key: "".to_string(),
+            custom_api_model: "".to_string(),
         }
     }
 

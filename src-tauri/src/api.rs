@@ -402,6 +402,8 @@ pub async fn transcribe_local_whisper(
         .arg(&parent_dir_str)
         .arg("--output_format")
         .arg("txt")
+        .arg("--fp16")
+        .arg("False")
         .env("PYTHONIOENCODING", "utf-8");
 
     if language != "auto" {
@@ -432,5 +434,113 @@ pub async fn transcribe_local_whisper(
     let _ = fs::remove_file(output_txt_path);
 
     Ok(transcribed_text.trim().to_string())
+}
+
+pub async fn refine_with_openai_compatible(
+    api_url: &str,
+    api_key: &str,
+    model: &str,
+    prompt: &str,
+    raw_text: &str,
+    language: &str,
+) -> Result<String, String> {
+    let client = Client::new();
+    
+    // Normalize endpoint URL
+    let mut endpoint = api_url.trim().to_string();
+    if !endpoint.contains("/chat/completions") && !endpoint.contains("/completions") {
+        if endpoint.ends_with('/') {
+            endpoint.push_str("chat/completions");
+        } else {
+            endpoint.push_str("/chat/completions");
+        }
+    }
+
+    let system_instruction = "You are a professional voice dictation assistant. Your task is to refine and clean up the raw transcription. \
+You must carefully process the text to ensure the correct script and language are preserved.
+
+CRITICAL TRANSLITERATION, SCRIPT & TRANSLATION PRESERVATION RULES:
+1. DETECT HINDI WORDS: Identify all Hindi words and phrases, even if they are written in Roman/Latin script (Hinglish / transliterated script, e.g., 'mera', 'naam', 'hai', 'kaise', 'ho', 'main', 'aur').
+2. WRITE HINDI IN DEVANAGARI: You MUST convert all Hindi words/phrases to Devanagari script (e.g., convert 'mera' to 'मेरा', 'naam' to 'नाम', 'hai' to 'है', 'kaise' to 'कैसे', 'ho' to 'हो').
+3. KEEP ENGLISH IN ENGLISH SCRIPT: Keep all English words and phrases in English (Latin script). For example, 'software engineer', 'developer', 'meeting', 'call you later' must remain in English script. Do NOT translate English words to Hindi.
+4. STRICTLY PROHIBIT TRANSLATION: Do NOT translate Hindi words to English (e.g., do NOT translate 'mera naam' or 'मेरा नाम' to 'my name'). Keep them in their original language, but written in Devanagari script.
+5. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
+6. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text.
+
+EXAMPLES:
+- Input: \"mera naam hemanshu hai and I am a software engineer\"
+  Output: \"मेरा नाम हिमांशु है and I am a software engineer\"
+- Input: \"aaj weather bahut achha hai main office ja raha hoon\"
+  Output: \"आज वेदर बहुत अच्छा है मैं ऑफिस जा रहा हूँ\"
+- Input: \"hello team aaj ki meeting ka agenda kya hai\"
+  Output: \"hello team आज की मीटिंग का एजेंडा क्या है\"
+- Input: \"I will call you later, main abhi busy hoon\"
+  Output: \"I will call you later, मैं अभी बिजी हूँ\"";
+
+    let language_name = get_language_name(language);
+    let lang_instruction = if language_name == "Hindi" {
+        " IMPORTANT SCRIPT & TRANSLATION RULES: The text is in Hindi (or Hinglish, a mix of Hindi and English). You MUST refine and clean up the text in that same language mix. Write all Hindi words in Devanagari script (e.g. convert Romanized 'mera naam', 'kaise ho' to 'मेरा नाम', 'कैसे हो') and keep English words in English/Latin script. Absolutely DO NOT translate Hindi words to English (e.g. do NOT convert 'मेरा नाम' or 'mera naam' to 'My name').".to_string()
+    } else if language_name != "Auto-detect" {
+        format!(" IMPORTANT: The text is in {} (or a mix of {} and English). You must refine and clean up the text in that same language mix. Keep {} words in their native script and English words in English script. Do NOT translate non-English words to English.", language_name, language_name, language_name)
+    } else {
+        " IMPORTANT SCRIPT & TRANSLATION RULES: Detect the language of the raw text. If the raw text contains Hindi or Hinglish (mixed Hindi-English), you MUST write all Hindi words in Devanagari script and keep all English words in English script. Absolutely DO NOT translate Hindi words to English (e.g. do NOT convert 'मेरा नाम' or 'mera naam' to 'My name').".to_string()
+    };
+
+    let combined_prompt = format!(
+        "User Instruction: {}\n\nCRITICAL SCRIPT & LANGUAGE DIRECTIVE: {}\n\nRaw Transcript to clean up:\n\"\"\"\n{}\n\"\"\"\n\nRefined and Cleaned transcript:",
+        prompt,
+        lang_instruction,
+        raw_text
+    );
+
+    let request_body = json!({
+        "model": model,
+        "messages": [
+            {
+                "role": "system",
+                "content": system_instruction
+            },
+            {
+                "role": "user",
+                "content": combined_prompt
+            }
+        ],
+        "temperature": 0.2
+    });
+
+    let mut req = client.post(&endpoint)
+        .bearer_auth(api_key)
+        .json(&request_body);
+
+    if endpoint.contains("openrouter.ai") {
+        req = req.header("HTTP-Referer", "https://github.com/hemanshum/OpenWispr")
+                 .header("X-Title", "OpenWispr");
+    }
+
+    let response = req.send()
+        .await
+        .map_err(|e| format!("API request failed: {}", e))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let err_text = response.text().await.unwrap_or_default();
+        return Err(format!("API returned error status {}: {}", status, err_text));
+    }
+
+    let json_resp: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse response JSON: {}", e))?;
+
+    let refined_text = json_resp["choices"][0]["message"]["content"]
+        .as_str()
+        .ok_or_else(|| {
+            format!(
+                "Unexpected API response structure. Response: {:?}",
+                json_resp
+            )
+        })?;
+
+    Ok(refined_text.trim().to_string())
 }
 

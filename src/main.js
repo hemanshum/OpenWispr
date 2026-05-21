@@ -33,9 +33,7 @@ const selectLocalWhisperModel = document.getElementById("local-whisper-model");
 
 const selectProvider = document.getElementById("provider-select");
 const groupGemini = document.getElementById("gemini-settings");
-const selectModel = document.getElementById("model-select");
-const groupCustomModel = document.getElementById("custom-model-group");
-const inputCustomModel = document.getElementById("custom-model");
+const inputModel = document.getElementById("model-input");
 const groupOllama = document.getElementById("ollama-settings");
 const inputOllamaUrl = document.getElementById("ollama-url");
 const inputOllamaModel = document.getElementById("ollama-model");
@@ -44,6 +42,23 @@ const inputPrompt = document.getElementById("refine-prompt");
 const btnSaveSettings = document.getElementById("btn-save-settings");
 const btnToggleKey = document.getElementById("btn-toggle-key");
 const presetBadges = document.querySelectorAll(".preset-badge");
+
+// New Refinement Provider Elements
+const groupOpenAiRefine = document.getElementById("openai-refine-settings");
+const inputOpenAiRefineApiKey = document.getElementById("openai-refine-api-key");
+const btnToggleOpenAiRefineKey = document.getElementById("btn-toggle-openai-refine-key");
+const inputOpenAiRefineModel = document.getElementById("openai-refine-model");
+
+const groupOpenRouter = document.getElementById("openrouter-settings");
+const inputOpenRouterApiKey = document.getElementById("openrouter-api-key");
+const btnToggleOpenRouterKey = document.getElementById("btn-toggle-openrouter-key");
+const inputOpenRouterModel = document.getElementById("openrouter-model");
+
+const groupCustomApi = document.getElementById("custom-api-settings");
+const inputCustomApiUrl = document.getElementById("custom-api-url");
+const inputCustomApiKey = document.getElementById("custom-api-key");
+const btnToggleCustomApiKey = document.getElementById("btn-toggle-custom-api-key");
+const inputCustomApiModel = document.getElementById("custom-api-model");
 
 const toastAlert = document.getElementById("toast-alert");
 const toastText = document.getElementById("toast-text");
@@ -107,14 +122,98 @@ btnToggleOpenAiKey.addEventListener("click", () => {
   btnToggleOpenAiKey.textContent = isOpenAiPasswordVisible ? "🙈" : "👁️";
 });
 
-// Toggle custom model input group based on dropdown selection
-selectModel.addEventListener("change", () => {
-  if (selectModel.value === "custom") {
-    groupCustomModel.style.display = "flex";
-  } else {
-    groupCustomModel.style.display = "none";
-  }
+let isOpenAiRefinePasswordVisible = false;
+let isOpenRouterPasswordVisible = false;
+let isCustomApiPasswordVisible = false;
+
+// Toggle OpenAI Refine API Key Visibility
+btnToggleOpenAiRefineKey.addEventListener("click", () => {
+  isOpenAiRefinePasswordVisible = !isOpenAiRefinePasswordVisible;
+  inputOpenAiRefineApiKey.type = isOpenAiRefinePasswordVisible ? "text" : "password";
+  btnToggleOpenAiRefineKey.textContent = isOpenAiRefinePasswordVisible ? "🙈" : "👁️";
 });
+
+// Toggle OpenRouter API Key Visibility
+btnToggleOpenRouterKey.addEventListener("click", () => {
+  isOpenRouterPasswordVisible = !isOpenRouterPasswordVisible;
+  inputOpenRouterApiKey.type = isOpenRouterPasswordVisible ? "text" : "password";
+  btnToggleOpenRouterKey.textContent = isOpenRouterPasswordVisible ? "🙈" : "👁️";
+});
+
+// Toggle Custom API Key Visibility
+btnToggleCustomApiKey.addEventListener("click", () => {
+  isCustomApiPasswordVisible = !isCustomApiPasswordVisible;
+  inputCustomApiKey.type = isCustomApiPasswordVisible ? "text" : "password";
+  btnToggleCustomApiKey.textContent = isCustomApiPasswordVisible ? "🙈" : "👁️";
+});
+
+// Sync OpenAI API Key inputs in real time
+inputOpenAiApiKey.addEventListener("input", () => {
+  inputOpenAiRefineApiKey.value = inputOpenAiApiKey.value;
+});
+inputOpenAiRefineApiKey.addEventListener("input", () => {
+  inputOpenAiApiKey.value = inputOpenAiRefineApiKey.value;
+});
+
+// Model input event listener (removed selectModel dropdown listener)
+
+// Update speed & performance estimation message dynamically
+function updatePerformanceAdvisor() {
+  const transProvider = selectTranscriptionProvider.value;
+  const refProvider = selectProvider.value;
+
+  const card = document.getElementById("performance-advisor");
+  const icon = document.getElementById("advisor-icon");
+  const badge = document.getElementById("advisor-badge");
+  const desc = document.getElementById("advisor-description");
+
+  if (!card || !icon || !badge || !desc) return;
+
+  // Reset classes
+  card.className = "performance-advisor";
+
+  if (transProvider === "gemini" && refProvider === "gemini") {
+    card.classList.add("speed-blazing");
+    icon.textContent = "🚀";
+    badge.textContent = "Blazing Fast (~1.5s)";
+    desc.innerHTML = `Using <strong>Google Gemini (Cloud)</strong> for both transcription and refinement executes in a single optimized API request. Highly recommended for near-instant responses.`;
+  } else if (transProvider === "gemini" && refProvider === "none") {
+    card.classList.add("speed-blazing");
+    icon.textContent = "🚀";
+    badge.textContent = "Blazing Fast (~1.5s)";
+    desc.innerHTML = `Using <strong>Google Gemini (Cloud)</strong> transcription with refinement disabled runs extremely fast. Perfect for quick and accurate dictation.`;
+  } else if (transProvider === "openai" && refProvider === "none") {
+    card.classList.add("speed-blazing");
+    icon.textContent = "🚀";
+    badge.textContent = "Blazing Fast (~1.5s)";
+    desc.innerHTML = `Using <strong>OpenAI Whisper (Cloud)</strong> transcription with refinement disabled is highly optimized and returns in under 2 seconds.`;
+  } else if ((transProvider === "gemini" || transProvider === "openai") && (refProvider === "gemini" || refProvider === "openai" || refProvider === "openrouter" || refProvider === "custom")) {
+    card.classList.add("speed-fast");
+    icon.textContent = "⚡";
+    badge.textContent = "Fast (~3.0s)";
+    desc.innerHTML = `Uses cloud-based transcription with <strong>${refProvider === "openai" ? "OpenAI GPT" : refProvider === "openrouter" ? "OpenRouter" : refProvider === "custom" ? "Custom API" : "Google Gemini"}</strong> refinement. Fast and highly accurate refinement with minimal network overhead.`;
+  } else if ((transProvider === "gemini" || transProvider === "openai") && refProvider === "ollama") {
+    card.classList.add("speed-slow");
+    icon.textContent = "🐢";
+    badge.textContent = "Slow (~10-30s)";
+    desc.innerHTML = `Using a cloud transcription engine but refining with a local <strong>Ollama LLM</strong> is slow due to local generation latency. Consider switching Refinement Provider to Gemini Cloud or None for a significant speedup.`;
+  } else if (transProvider === "local_whisper" && refProvider === "none") {
+    card.classList.add("speed-moderate");
+    icon.textContent = "📊";
+    badge.textContent = "Moderate (~8-15s)";
+    desc.innerHTML = `Local offline transcription requires running Python and PyTorch model weights on your CPU. We added <strong>--fp16 False</strong> to speed it up on CPU, but switching to a Cloud provider is recommended.`;
+  } else if (transProvider === "local_whisper" && (refProvider === "gemini" || refProvider === "openai" || refProvider === "openrouter" || refProvider === "custom")) {
+    card.classList.add("speed-slow");
+    icon.textContent = "🐢";
+    badge.textContent = "Slow (~10-20s)";
+    desc.innerHTML = `Local Whisper offline transcription takes time to initialize on your CPU. To speed this up, use a smaller Whisper model or switch Transcription Provider to Gemini/OpenAI Cloud.`;
+  } else if (transProvider === "local_whisper" && refProvider === "ollama") {
+    card.classList.add("speed-slow");
+    icon.textContent = "🐢";
+    badge.textContent = "Very Slow (~20-40s+)";
+    desc.innerHTML = `Fully offline execution (Local Whisper + Local Ollama) is extremely resource-intensive and runs slowly on CPU. Use cloud-based options for the fastest experience.`;
+  }
+}
 
 // Update visibility of setting blocks based on selected providers
 function updateSettingsVisibility() {
@@ -153,17 +252,50 @@ function updateSettingsVisibility() {
   if (refProvider === "gemini") {
     groupGemini.style.display = "block";
     groupOllama.style.display = "none";
+    groupOpenAiRefine.style.display = "none";
+    groupOpenRouter.style.display = "none";
+    groupCustomApi.style.display = "none";
+    groupRefinePrompt.style.display = "block";
+  } else if (refProvider === "openai") {
+    groupGemini.style.display = "none";
+    groupOllama.style.display = "none";
+    groupOpenAiRefine.style.display = "block";
+    groupOpenRouter.style.display = "none";
+    groupCustomApi.style.display = "none";
+    groupRefinePrompt.style.display = "block";
+  } else if (refProvider === "openrouter") {
+    groupGemini.style.display = "none";
+    groupOllama.style.display = "none";
+    groupOpenAiRefine.style.display = "none";
+    groupOpenRouter.style.display = "block";
+    groupCustomApi.style.display = "none";
+    groupRefinePrompt.style.display = "block";
+  } else if (refProvider === "custom") {
+    groupGemini.style.display = "none";
+    groupOllama.style.display = "none";
+    groupOpenAiRefine.style.display = "none";
+    groupOpenRouter.style.display = "none";
+    groupCustomApi.style.display = "block";
     groupRefinePrompt.style.display = "block";
   } else if (refProvider === "ollama") {
     groupGemini.style.display = "none";
     groupOllama.style.display = "block";
+    groupOpenAiRefine.style.display = "none";
+    groupOpenRouter.style.display = "none";
+    groupCustomApi.style.display = "none";
     groupRefinePrompt.style.display = "block";
   } else {
     // "none"
     groupGemini.style.display = "none";
     groupOllama.style.display = "none";
+    groupOpenAiRefine.style.display = "none";
+    groupOpenRouter.style.display = "none";
+    groupCustomApi.style.display = "none";
     groupRefinePrompt.style.display = "none";
   }
+
+  // Update dynamic performance advisor
+  updatePerformanceAdvisor();
 }
 
 selectTranscriptionProvider.addEventListener("change", updateSettingsVisibility);
@@ -192,15 +324,10 @@ presetBadges.forEach((badge) => {
 
 // Save Settings
 btnSaveSettings.addEventListener("click", async () => {
-  let modelVal = selectModel.value;
-  if (modelVal === "custom") {
-    modelVal = inputCustomModel.value.trim();
-  }
-
   const config = {
     api_key: inputApiKey.value,
     prompt: inputPrompt.value,
-    model: modelVal,
+    model: inputModel.value.trim(),
     provider: selectProvider.value,
     ollama_url: inputOllamaUrl.value.trim(),
     ollama_model: inputOllamaModel.value.trim(),
@@ -210,6 +337,12 @@ btnSaveSettings.addEventListener("click", async () => {
     openai_model: inputOpenAiModel.value.trim(),
     local_whisper_model: selectLocalWhisperModel.value,
     transcription_language: selectTranscriptionLanguage.value,
+    openai_refine_model: inputOpenAiRefineModel.value.trim(),
+    openrouter_api_key: inputOpenRouterApiKey.value.trim(),
+    openrouter_model: inputOpenRouterModel.value.trim(),
+    custom_api_url: inputCustomApiUrl.value.trim(),
+    custom_api_key: inputCustomApiKey.value.trim(),
+    custom_api_model: inputCustomApiModel.value.trim(),
   };
 
   try {
@@ -324,6 +457,17 @@ async function initConfig() {
     const savedProvider = config.provider || "gemini";
     selectProvider.value = savedProvider;
     
+    // Set the refinement OpenAI key from the unified key on load
+    inputOpenAiRefineApiKey.value = config.openai_api_key || "";
+    inputOpenAiRefineModel.value = config.openai_refine_model || "gpt-4o-mini";
+
+    inputOpenRouterApiKey.value = config.openrouter_api_key || "";
+    inputOpenRouterModel.value = config.openrouter_model || "google/gemini-2.5-flash";
+
+    inputCustomApiUrl.value = config.custom_api_url || "";
+    inputCustomApiKey.value = config.custom_api_key || "";
+    inputCustomApiModel.value = config.custom_api_model || "";
+
     updateSettingsVisibility();
 
     inputOllamaUrl.value = config.ollama_url || "http://localhost:11434";
@@ -335,17 +479,7 @@ async function initConfig() {
       config.model = "gemini-2.0-flash";
       invoke("save_config", { config }).catch((err) => console.error("Failed to auto-migrate config model:", err));
     }
-    const presetModels = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-pro"];
-    
-    if (presetModels.includes(savedModel)) {
-      selectModel.value = savedModel;
-      groupCustomModel.style.display = "none";
-      inputCustomModel.value = "";
-    } else {
-      selectModel.value = "custom";
-      groupCustomModel.style.display = "flex";
-      inputCustomModel.value = savedModel;
-    }
+    inputModel.value = savedModel;
 
     // Load available audio devices and highlight saved device
     await loadAudioDevices(config.audio_device);

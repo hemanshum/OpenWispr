@@ -688,3 +688,88 @@ select.form-input option {
   border-radius: 6px;
   transition: width 0.08s ease; /* fast transitions for audio feedback */
 }
+
+/* Dynamic Speed & Performance Advisor Card */
+.performance-advisor {
+  margin-top: 14px;
+  padding: 12px 16px;
+  background: rgba(168, 85, 247, 0.03);
+  border: 1px solid rgba(168, 85, 247, 0.12);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.performance-advisor.speed-blazing {
+  background: rgba(6, 182, 212, 0.03);
+  border-color: rgba(6, 182, 212, 0.15);
+}
+
+.performance-advisor.speed-fast {
+  background: rgba(16, 185, 129, 0.03);
+  border-color: rgba(16, 185, 129, 0.15);
+}
+
+.performance-advisor.speed-moderate {
+  background: rgba(245, 158, 11, 0.03);
+  border-color: rgba(245, 158, 11, 0.15);
+}
+
+.performance-advisor.speed-slow {
+  background: rgba(244, 63, 94, 0.03);
+  border-color: rgba(244, 63, 94, 0.15);
+}
+
+.advisor-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.advisor-icon {
+  font-size: 1.1rem;
+}
+
+.advisor-title {
+  color: #94a3b8;
+}
+
+.advisor-badge {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.speed-blazing .advisor-badge {
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--cyan);
+}
+
+.speed-fast .advisor-badge {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--green);
+}
+
+.speed-moderate .advisor-badge {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.speed-slow .advisor-badge {
+  background: rgba(244, 63, 94, 0.15);
+  color: var(--red);
+}
+
+.advisor-description {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  line-height: 1.45;
+}
