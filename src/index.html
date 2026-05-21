@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenWispr - Dictation Workspace</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="/main.js" defer></script>
+  </head>
+  <body>
+    <div class="window-frame">
+      <!-- Header / Tabs Navigation -->
+      <header class="header">
+        <div class="brand">
+          <div class="brand-logo">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15.5h-2v-2h2v2zm0-4h-2v-6h2v6z"/>
+            </svg>
+          </div>
+          <span class="brand-name">OpenWispr</span>
+        </div>
+        <nav class="nav-tabs">
+          <button class="tab-btn active" id="tab-dash">Dashboard</button>
+          <button class="tab-btn" id="tab-settings">Settings</button>
+        </nav>
+      </header>
+
+      <!-- Content Container -->
+      <div class="content-container">
+        <!-- Dashboard Tab -->
+        <section class="tab-content active" id="content-dash">
+          <div class="dashboard-view">
+            <div class="status-section">
+              <div class="status-pill" id="status-badge">
+                <span class="indicator-dot"></span>
+                <span class="status-text" id="status-label">Idle</span>
+              </div>
+            </div>
+
+            <!-- Waveform Canvas Visualizer -->
+            <div class="visualizer-container">
+              <canvas class="visualizer-canvas" id="canvas-visualizer"></canvas>
+              <button class="mic-trigger" id="btn-record">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Help Tip card -->
+            <div class="instruction-card">
+              <div class="keycap" id="trigger-keycap">CAPS LOCK</div>
+              <div class="instruction-text">
+                Hold the trigger key down to <strong>record voice</strong>. Release the key to transcribe, clean, and <strong>paste text</strong> instantly.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Settings Tab -->
+        <section class="tab-content" id="content-settings">
+          <div class="settings-view">
+            <!-- Settings Sub-tabs -->
+            <div class="sub-nav-tabs">
+              <button class="sub-tab-btn active" id="sub-tab-audio">Audio Settings</button>
+              <button class="sub-tab-btn" id="sub-tab-ai">AI Settings</button>
+            </div>
+
+            <!-- Audio Settings Tab Content -->
+            <div class="sub-tab-content active" id="sub-content-audio">
+              <div class="form-group">
+                <label class="form-label" for="mic-select">Microphone Input</label>
+                <select id="mic-select" class="form-input">
+                  <option value="Default">Default System Device</option>
+                </select>
+              </div>
+
+              <div class="form-group mic-test-container">
+                <label class="form-label">Live Microphone Test</label>
+                <div class="mic-test-row">
+                  <button class="test-mic-btn" id="btn-test-mic" type="button">
+                    <span class="btn-text">Test Mic</span>
+                  </button>
+                  <div class="mic-test-meter">
+                    <div class="mic-test-bar" id="mic-test-bar" style="width: 0%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AI Settings Tab Content -->
+            <div class="sub-tab-content" id="sub-content-ai">
+              <div class="form-group">
+                <label class="form-label" for="api-key">Gemini API Key</label>
+                <div class="input-container">
+                  <input
+                    type="password"
+                    id="api-key"
+                    class="form-input"
+                    placeholder="Enter your Google Gemini API Key..."
+                  />
+                  <button class="input-toggle-btn" id="btn-toggle-key" type="button">
+                    👁️
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="provider-select">AI Provider (Refinement)</label>
+                <select id="provider-select" class="form-input">
+                  <option value="gemini">Google Gemini (Cloud)</option>
+                  <option value="ollama">Ollama (Local Refinement)</option>
+                </select>
+              </div>
+
+              <!-- Gemini Model Settings -->
+              <div id="gemini-settings">
+                <div class="form-group" style="margin-top: 4px;">
+                  <label class="form-label" for="model-select">Gemini Model</label>
+                  <select id="model-select" class="form-input">
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash (Default)</option>
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                    <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                    <option value="custom">Custom Model...</option>
+                  </select>
+                </div>
+
+                <div class="form-group" id="custom-model-group" style="display: none; margin-top: 12px;">
+                  <label class="form-label" for="custom-model">Custom Model ID</label>
+                  <input
+                    type="text"
+                    id="custom-model"
+                    class="form-input"
+                    placeholder="e.g. gemini-1.5-flash-8b"
+                  />
+                </div>
+              </div>
+
+              <!-- Ollama Settings -->
+              <div id="ollama-settings" style="display: none;">
+                <div class="form-group" style="margin-top: 4px;">
+                  <label class="form-label" for="ollama-url">Ollama Server URL</label>
+                  <input
+                    type="text"
+                    id="ollama-url"
+                    class="form-input"
+                    placeholder="http://localhost:11434"
+                  />
+                </div>
+
+                <div class="form-group" style="margin-top: 12px;">
+                  <label class="form-label" for="ollama-model">Ollama Model Name</label>
+                  <input
+                    type="text"
+                    id="ollama-model"
+                    class="form-input"
+                    placeholder="e.g. llama3, mistral, gemma"
+                  />
+                </div>
+
+                <div class="settings-note">
+                  ℹ️ <strong>Hybrid Mode:</strong> Audio is transcribed via Gemini API, and the cleanup/refinement prompt is processed locally by Ollama.
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top: 4px;">
+                <label class="form-label" for="refine-prompt">AI Cleanup Instruction</label>
+                <textarea
+                  id="refine-prompt"
+                  class="form-textarea"
+                  placeholder="Give instructions to the AI (e.g. clean up fillers, fix grammar)..."
+                ></textarea>
+                
+                <!-- Quick Preset Picker -->
+                <div class="preset-selector">
+                  <span class="preset-badge" data-prompt="Transcribe and clean up the audio. Remove filler words and format appropriately.">Default</span>
+                  <span class="preset-badge" data-prompt="Transcribe and format as a clear, professional email draft. Maintain formal language.">Professional Email</span>
+                  <span class="preset-badge" data-prompt="Transcribe and format as software engineering documentation or clean notes. Format code blocks if any.">Developer Notes</span>
+                  <span class="preset-badge" data-prompt="Transcribe verbatim. Do not change any words, keep all filler sounds as text.">Verbatim Transcript</span>
+                </div>
+              </div>
+            </div>
+
+            <button class="save-btn" id="btn-save-settings">Save Configurations</button>
+          </div>
+        </section>
+      </div>
+
+      <!-- Toast Alert Notification -->
+      <div class="toast" id="toast-alert">
+        <span class="toast-icon">✨</span>
+        <span class="toast-message" id="toast-text">Settings saved successfully</span>
+      </div>
+    </div>
+  </body>
+</html>
