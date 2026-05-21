@@ -21,6 +21,7 @@ const statusBadge = document.getElementById("status-badge");
 const statusLabel = document.getElementById("status-label");
 
 const selectTranscriptionProvider = document.getElementById("transcription-provider-select");
+const selectTranscriptionLanguage = document.getElementById("transcription-language-select");
 const inputApiKey = document.getElementById("api-key");
 const apiKeyGroup = document.getElementById("api-key-group");
 const groupOpenAi = document.getElementById("openai-settings");
@@ -208,6 +209,7 @@ btnSaveSettings.addEventListener("click", async () => {
     openai_api_key: inputOpenAiApiKey.value.trim(),
     openai_model: inputOpenAiModel.value.trim(),
     local_whisper_model: selectLocalWhisperModel.value,
+    transcription_language: selectTranscriptionLanguage.value,
   };
 
   try {
@@ -314,6 +316,7 @@ async function initConfig() {
     inputPrompt.value = config.prompt || "";
     
     selectTranscriptionProvider.value = config.transcription_provider || "gemini";
+    selectTranscriptionLanguage.value = config.transcription_language || "auto";
     inputOpenAiApiKey.value = config.openai_api_key || "";
     inputOpenAiModel.value = config.openai_model || "whisper-1";
     selectLocalWhisperModel.value = config.local_whisper_model || "base";

@@ -150,12 +150,14 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
         let ollama_model = api_config.ollama_model.to_string();
         let openai_model = api_config.openai_model.to_string();
         let local_whisper_model = api_config.local_whisper_model.to_string();
+        let transcription_language = api_config.transcription_language.to_string();
 
         let result = match tx_provider.as_str() {
             "local_whisper" => {
                 match crate::api::transcribe_local_whisper(
                     &temp_file_str,
                     &local_whisper_model,
+                    &transcription_language,
                 ).await {
                     Ok(raw_text) => {
                         if raw_text.is_empty() {
@@ -168,6 +170,7 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
                                         &ollama_model,
                                         &prompt,
                                         &raw_text,
+                                        &transcription_language,
                                     ).await
                                 }
                                 "gemini" => {
@@ -176,6 +179,7 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
                                         &model,
                                         &prompt,
                                         &raw_text,
+                                        &transcription_language,
                                     ).await
                                 }
                                 _ => Ok(raw_text),
@@ -190,6 +194,7 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
                     &temp_file_str,
                     &openai_api_key,
                     &openai_model,
+                    &transcription_language,
                 ).await {
                     Ok(raw_text) => {
                         if raw_text.is_empty() {
@@ -202,6 +207,7 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
                                         &ollama_model,
                                         &prompt,
                                         &raw_text,
+                                        &transcription_language,
                                     ).await
                                 }
                                 "gemini" => {
@@ -210,6 +216,7 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
                                         &model,
                                         &prompt,
                                         &raw_text,
+                                        &transcription_language,
                                     ).await
                                 }
                                 _ => Ok(raw_text),
@@ -227,6 +234,7 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
                         &api_key,
                         verbatim_prompt,
                         "gemini-2.0-flash",
+                        &transcription_language,
                     ).await {
                         Ok(raw_text) => {
                             if raw_text.is_empty() {
@@ -237,6 +245,7 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
                                     &ollama_model,
                                     &prompt,
                                     &raw_text,
+                                    &transcription_language,
                                 ).await
                             }
                         }
@@ -248,6 +257,7 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
                         &api_key,
                         &prompt,
                         &model,
+                        &transcription_language,
                     ).await
                 } else {
                     // Refinement is "none"
@@ -257,6 +267,7 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
                         &api_key,
                         verbatim_prompt,
                         "gemini-2.0-flash",
+                        &transcription_language,
                     ).await
                 }
             }
