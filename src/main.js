@@ -44,6 +44,8 @@ const inputPrompt = document.getElementById("refine-prompt");
 const btnSaveSettings = document.getElementById("btn-save-settings");
 const btnToggleKey = document.getElementById("btn-toggle-key");
 const presetBadges = document.querySelectorAll(".preset-badge");
+const dashboardLanguageSelect = document.getElementById("dashboard-language-select");
+const dashboardPresetBadges = document.querySelectorAll(".dashboard-preset-badge");
 
 // New Refinement Provider Elements
 const groupOpenAiRefine = document.getElementById("openai-refine-settings");
@@ -338,16 +340,112 @@ function showToast(message, isError = false) {
   }, 3000);
 }
 
-// Preset Badges Click Handler
+// Function to update visual active classes on preset badges
+function updateActivePresetBadges(promptText) {
+  presetBadges.forEach((badge) => {
+    if (badge.getAttribute("data-prompt") === promptText) {
+      badge.classList.add("active");
+    } else {
+      badge.classList.remove("active");
+    }
+  });
+
+  dashboardPresetBadges.forEach((badge) => {
+    if (badge.getAttribute("data-prompt") === promptText) {
+      badge.classList.add("active");
+    } else {
+      badge.classList.remove("active");
+    }
+  });
+}
+
+// Preset Badges Hover Tooltip Logic
+const tooltip = document.getElementById("app-tooltip");
+
+function showPresetTooltip(e) {
+  const badge = e.currentTarget;
+  const text = badge.getAttribute("data-prompt");
+  if (!text || !tooltip) return;
+
+  tooltip.textContent = text;
+  tooltip.classList.add("show");
+
+  const rect = badge.getBoundingClientRect();
+  const tooltipRect = tooltip.getBoundingClientRect();
+
+  // Position above the badge, centered horizontally
+  let left = rect.left + (rect.width - tooltipRect.width) / 2;
+  let top = rect.top - tooltipRect.height - 8;
+
+  // Prevent going off-screen horizontally
+  const padding = 12;
+  if (left < padding) {
+    left = padding;
+  } else if (left + tooltipRect.width > window.innerWidth - padding) {
+    left = window.innerWidth - tooltipRect.width - padding;
+  }
+
+  // Prevent going off-screen vertically (if there's no space above, show below)
+  if (top < padding) {
+    top = rect.bottom + 8;
+  }
+
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+}
+
+function hidePresetTooltip() {
+  if (tooltip) {
+    tooltip.classList.remove("show");
+  }
+}
+
+// Bind hover and click events to all badges
+document.querySelectorAll(".preset-badge, .dashboard-preset-badge").forEach((badge) => {
+  badge.addEventListener("mouseenter", showPresetTooltip);
+  badge.addEventListener("mouseleave", hidePresetTooltip);
+  badge.addEventListener("click", hidePresetTooltip);
+});
+
+// Preset Badges Click Handler (Settings page)
 presetBadges.forEach((badge) => {
   badge.addEventListener("click", () => {
-    inputPrompt.value = badge.getAttribute("data-prompt");
+    const prompt = badge.getAttribute("data-prompt");
+    inputPrompt.value = prompt;
+    updateActivePresetBadges(prompt);
     showToast("Selected preset prompt");
   });
 });
 
-// Save Settings
-btnSaveSettings.addEventListener("click", async () => {
+// Preset Badges Click Handler (Dashboard page)
+dashboardPresetBadges.forEach((badge) => {
+  badge.addEventListener("click", async () => {
+    const prompt = badge.getAttribute("data-prompt");
+    inputPrompt.value = prompt;
+    updateActivePresetBadges(prompt);
+    await autoSaveConfig();
+    showToast("Selected preset prompt");
+  });
+});
+
+// Watch input in settings textarea to dynamically update badge styling
+inputPrompt.addEventListener("input", () => {
+  updateActivePresetBadges(inputPrompt.value);
+});
+
+// Sync Spoken Language selectors
+dashboardLanguageSelect.addEventListener("change", async () => {
+  selectTranscriptionLanguage.value = dashboardLanguageSelect.value;
+  await autoSaveConfig();
+  showToast("Language updated");
+});
+
+selectTranscriptionLanguage.addEventListener("change", () => {
+  dashboardLanguageSelect.value = selectTranscriptionLanguage.value;
+});
+
+// Auto Save Settings
+async function autoSaveConfig() {
   const config = {
     api_key: inputApiKey.value,
     prompt: inputPrompt.value,
@@ -371,10 +469,15 @@ btnSaveSettings.addEventListener("click", async () => {
 
   try {
     await invoke("save_config", { config });
-    showToast("Configurations saved successfully!");
   } catch (err) {
-    showToast(`Failed to save settings: ${err}`, true);
+    console.error("Auto-save failed:", err);
   }
+}
+
+// Save Settings Button Handler
+btnSaveSettings.addEventListener("click", async () => {
+  await autoSaveConfig();
+  showToast("Configurations saved successfully!");
 });
 
 // Manual Trigger Start/Stop
@@ -471,9 +574,13 @@ async function initConfig() {
     const config = await invoke("load_config");
     inputApiKey.value = config.api_key || "";
     inputPrompt.value = config.prompt || "";
+    updateActivePresetBadges(config.prompt || "");
     
     selectTranscriptionProvider.value = config.transcription_provider || "gemini";
     selectTranscriptionLanguage.value = config.transcription_language || "auto";
+    if (dashboardLanguageSelect) {
+      dashboardLanguageSelect.value = config.transcription_language || "auto";
+    }
     inputOpenAiApiKey.value = config.openai_api_key || "";
     inputOpenAiModel.value = config.openai_model || "whisper-1";
     selectLocalWhisperModel.value = config.local_whisper_model || "base";

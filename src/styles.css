@@ -36,10 +36,9 @@
 }
 
 body {
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
   overflow: hidden;
   position: relative;
 }
@@ -70,20 +69,17 @@ body::after {
 }
 
 .window-frame {
-  width: 620px;
-  height: 500px;
+  width: 100%;
+  height: 100%;
   background: var(--glass-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  border-radius: 20px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 
-              0 0 100px rgba(168, 85, 247, 0.05);
+  border: none;
+  border-radius: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Header Tab Bar */
@@ -107,18 +103,14 @@ body::after {
 .brand-logo {
   width: 28px;
   height: 28px;
-  background: linear-gradient(135deg, var(--purple), var(--indigo));
+  background: #ffffff;
   border-radius: 8px;
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
-}
-
-.brand-logo svg {
-  width: 16px;
-  height: 16px;
-  fill: #fff;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+  overflow: hidden;
+  padding: 2px;
 }
 
 .brand-name {
@@ -190,16 +182,37 @@ body::after {
 
 /* Dashboard Tab Styles */
 .dashboard-view {
-  justify-content: space-between;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  gap: 12px;
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 6px;
   text-align: center;
+  width: 100%;
+}
+
+/* Custom Scrollbar for dashboard view */
+.dashboard-view::-webkit-scrollbar {
+  width: 6px;
+}
+.dashboard-view::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dashboard-view::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+.dashboard-view::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .status-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 20px;
+  margin-top: 4px;
 }
 
 .status-pill {
@@ -214,7 +227,7 @@ body::after {
   font-size: 0.85rem;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  margin-bottom: 20px;
+  margin-bottom: 4px;
   transition: all 0.3s ease;
 }
 
@@ -289,7 +302,7 @@ body::after {
   justify-content: center;
   align-items: center;
   position: relative;
-  margin: 10px 0;
+  margin: 4px 0;
 }
 
 .visualizer-canvas {
@@ -521,6 +534,13 @@ select.form-input option {
   background: rgba(168, 85, 247, 0.1);
   color: var(--purple);
   border-color: rgba(168, 85, 247, 0.2);
+}
+
+.preset-badge.active {
+  background: rgba(168, 85, 247, 0.2);
+  color: #fff;
+  border-color: var(--purple);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.25);
 }
 
 .settings-note {
@@ -1050,5 +1070,164 @@ select.form-input option {
   line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* Dashboard Controls styling */
+.dashboard-controls-card {
+  width: 100%;
+  background: rgba(20, 16, 32, 0.5);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid var(--glass-border);
+  padding: 14px 16px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  margin-bottom: 4px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dashboard-controls-card:hover {
+  border-color: rgba(168, 85, 247, 0.25);
+  box-shadow: 0 6px 24px rgba(168, 85, 247, 0.05);
+}
+
+.dashboard-control-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.dashboard-control-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--purple);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dashboard-control-title svg {
+  color: var(--purple);
+}
+
+.dashboard-control-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dashboard-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dashboard-control-label {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.dashboard-select {
+  background: rgba(10, 8, 16, 0.6);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.85rem;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+  padding-right: 30px;
+  transition: all 0.3s ease;
+  min-width: 170px;
+}
+
+.dashboard-select:focus {
+  border-color: var(--purple);
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.2);
+}
+
+.dashboard-select option {
+  background-color: #171320;
+  color: #fff;
+}
+
+.dashboard-preset-selector {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.dashboard-preset-badge {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--glass-border);
+  color: #94a3b8;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dashboard-preset-badge:hover {
+  background: rgba(168, 85, 247, 0.1);
+  color: var(--purple);
+  border-color: rgba(168, 85, 247, 0.2);
+}
+
+.dashboard-preset-badge.active {
+  background: rgba(168, 85, 247, 0.25);
+  color: #fff;
+  border-color: var(--purple);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.25);
+}
+
+/* App Dynamic Tooltip Styling */
+.app-tooltip {
+  position: fixed;
+  background: rgba(15, 10, 25, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  color: #f1f5f9;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  max-width: 250px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 
+              0 0 15px rgba(168, 85, 247, 0.15);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1), 
+              transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10000;
+  transform: scale(0.95) translateY(5px);
+  text-align: left;
+  line-height: 1.45;
+}
+
+.app-tooltip.show {
+  opacity: 1;
+  transform: scale(1) translateY(0);
 }
 

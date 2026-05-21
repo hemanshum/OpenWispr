@@ -13,9 +13,7 @@
       <header class="header">
         <div class="brand">
           <div class="brand-logo">
-            <svg viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15.5h-2v-2h2v2zm0-4h-2v-6h2v6z"/>
-            </svg>
+            <img src="assets/logo.png" alt="OpenWispr Logo" style="width: 100%; height: 100%; object-fit: contain;">
           </div>
           <span class="brand-name">OpenWispr</span>
         </div>
@@ -46,6 +44,46 @@
                   <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
                 </svg>
               </button>
+            </div>
+
+            <!-- Dashboard Controls Card -->
+            <div class="dashboard-controls-card">
+              <div class="dashboard-control-header">
+                <div class="dashboard-control-title">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                  </svg>
+                  <span>Quick Controls</span>
+                </div>
+              </div>
+              <div class="dashboard-control-body">
+                <div class="dashboard-control-row">
+                  <span class="dashboard-control-label">Spoken Language:</span>
+                  <select id="dashboard-language-select" class="dashboard-select">
+                    <option value="auto">Auto-detect Language</option>
+                    <option value="en">English</option>
+                    <option value="hi">Hindi</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                    <option value="it">Italian</option>
+                    <option value="pt">Portuguese</option>
+                    <option value="zh">Chinese</option>
+                    <option value="ja">Japanese</option>
+                    <option value="ko">Korean</option>
+                    <option value="ru">Russian</option>
+                  </select>
+                </div>
+                <div class="dashboard-preset-selector">
+                  <span class="dashboard-preset-badge" data-prompt="Transcribe and clean up the audio. Remove filler words and format appropriately.">Default</span>
+                  <span class="dashboard-preset-badge" data-prompt="Transcribe and format as a clear, professional email draft. Maintain formal language.">Professional Email</span>
+                  <span class="dashboard-preset-badge" data-prompt="Transcribe and format as software engineering documentation or clean notes. Format code blocks if any.">Developer Notes</span>
+                  <span class="dashboard-preset-badge" data-prompt="Transcribe verbatim. Do not change any words, keep all filler sounds as text.">Verbatim Transcript</span>
+                  <span class="dashboard-preset-badge" data-prompt="Act as a prompt engineering assistant. Refine and optimize the transcribed input into a clear, structured, and effective LLM prompt.">Prompt Engineer</span>
+                </div>
+              </div>
             </div>
 
             <!-- Help Tip card -->
@@ -382,6 +420,7 @@
                   <span class="preset-badge" data-prompt="Transcribe and format as a clear, professional email draft. Maintain formal language.">Professional Email</span>
                   <span class="preset-badge" data-prompt="Transcribe and format as software engineering documentation or clean notes. Format code blocks if any.">Developer Notes</span>
                   <span class="preset-badge" data-prompt="Transcribe verbatim. Do not change any words, keep all filler sounds as text.">Verbatim Transcript</span>
+                  <span class="preset-badge" data-prompt="Act as a prompt engineering assistant. Refine and optimize the transcribed input into a clear, structured, and effective LLM prompt.">Prompt Engineer</span>
                 </div>
               </div>
               
@@ -408,6 +447,9 @@
         <span class="toast-icon">✨</span>
         <span class="toast-message" id="toast-text">Settings saved successfully</span>
       </div>
+
+      <!-- Custom Dynamic Tooltip -->
+      <div class="app-tooltip" id="app-tooltip"></div>
     </div>
   </body>
 </html>
