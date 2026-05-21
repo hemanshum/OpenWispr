@@ -3,6 +3,7 @@ mod hotkey;
 mod injector;
 mod api;
 mod config;
+mod history;
 
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -239,6 +240,9 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
                     return;
                 }
 
+                // Save to history database
+                let _ = crate::history::add_history_entry(&app_handle_clone, &transcribed_text);
+
                 let _ = app_handle_clone.emit("text-prepared", transcribed_text.clone());
 
                 update_status(&app_handle_clone, &app_state, "Pasting");
@@ -386,7 +390,10 @@ pub fn run() {
             get_audio_devices,
             start_mic_test,
             stop_mic_test,
-            set_window_focusable
+            set_window_focusable,
+            history::get_history,
+            history::delete_history_entry,
+            history::clear_all_history
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

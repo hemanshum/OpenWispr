@@ -29,6 +29,7 @@ base64 = "0.22"
 reqwest = { version = "0.12", features = ["json", "multipart"] }
 tokio = { version = "1", features = ["full"] }
 once_cell = "1.19"
+rusqlite = { version = "0.31", features = ["bundled"] }
 windows-sys = { version = "0.52", features = [
   "Win32_Foundation",
   "Win32_UI_Input_KeyboardAndMouse",

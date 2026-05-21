@@ -3,8 +3,10 @@ const { listen } = window.__TAURI__.event;
 
 // UI Elements
 const tabDash = document.getElementById("tab-dash");
+const tabHistory = document.getElementById("tab-history");
 const tabSettings = document.getElementById("tab-settings");
 const contentDash = document.getElementById("content-dash");
+const contentHistory = document.getElementById("content-history");
 const contentSettings = document.getElementById("content-settings");
 
 const subTabAudio = document.getElementById("sub-tab-audio");
@@ -84,17 +86,33 @@ let currentAmpScale = 0.1;
 tabDash.addEventListener("click", () => {
   stopMicTesting(); // Always stop mic test when switching back to dashboard
   tabDash.classList.add("active");
+  tabHistory.classList.remove("active");
   tabSettings.classList.remove("active");
   contentDash.classList.add("active");
+  contentHistory.classList.remove("active");
   contentSettings.classList.remove("active");
   invoke("set_window_focusable", { focusable: false }).catch((err) => console.error(err));
+});
+
+tabHistory.addEventListener("click", () => {
+  stopMicTesting();
+  tabHistory.classList.add("active");
+  tabDash.classList.remove("active");
+  tabSettings.classList.remove("active");
+  contentHistory.classList.add("active");
+  contentDash.classList.remove("active");
+  contentSettings.classList.remove("active");
+  invoke("set_window_focusable", { focusable: true }).catch((err) => console.error(err));
+  loadHistory();
 });
 
 tabSettings.addEventListener("click", () => {
   tabSettings.classList.add("active");
   tabDash.classList.remove("active");
+  tabHistory.classList.remove("active");
   contentSettings.classList.add("active");
   contentDash.classList.remove("active");
+  contentHistory.classList.remove("active");
   invoke("set_window_focusable", { focusable: true }).catch((err) => console.error(err));
 });
 
@@ -638,7 +656,151 @@ async function init() {
   // Set window non-focusable on start (since dashboard is active)
   invoke("set_window_focusable", { focusable: false }).catch((err) => console.error(err));
   
+  // Bind History specific non-tab UI elements
+  window.historyCount = document.getElementById("history-count");
+  window.btnClearHistory = document.getElementById("btn-clear-history");
+  window.historyEmpty = document.getElementById("history-empty");
+  window.historyList = document.getElementById("history-list");
+
+  // Clear History Listener
+  window.btnClearHistory.addEventListener("click", async () => {
+    if (confirm("Are you sure you want to clear all dictation history? This action cannot be undone.")) {
+      try {
+        await invoke("clear_all_history");
+        showToast("Cleared all history");
+        loadHistory();
+      } catch (err) {
+        showToast(`Failed to clear history: ${err}`, true);
+      }
+    }
+  });
+  
   draw();
+}
+
+async function loadHistory() {
+  try {
+    const entries = await invoke("get_history");
+    renderHistory(entries);
+  } catch (err) {
+    showToast(`Failed to load history: ${err}`, true);
+  }
+}
+
+function renderHistory(entries) {
+  const historyList = document.getElementById("history-list");
+  const historyCount = document.getElementById("history-count");
+  const historyEmpty = document.getElementById("history-empty");
+
+  if (!historyList || !historyCount || !historyEmpty) return;
+
+  historyList.innerHTML = "";
+  historyCount.textContent = `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`;
+  
+  if (entries.length === 0) {
+    historyEmpty.style.display = "flex";
+    return;
+  }
+  
+  historyEmpty.style.display = "none";
+  
+  entries.forEach((entry) => {
+    const item = document.createElement("div");
+    item.className = "history-item";
+    
+    // Header
+    const header = document.createElement("div");
+    header.className = "history-item-header";
+    
+    const timeSpan = document.createElement("span");
+    timeSpan.className = "history-item-time";
+    timeSpan.textContent = formatTimestamp(entry.timestamp);
+    header.appendChild(timeSpan);
+    
+    const actions = document.createElement("div");
+    actions.className = "history-item-actions";
+    
+    // Copy button
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "history-item-btn copy-btn-item";
+    copyBtn.title = "Copy to clipboard";
+    copyBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+      </svg>
+    `;
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(entry.text);
+        showToast("Copied to clipboard!");
+      } catch (err) {
+        showToast(`Failed to copy: ${err}`, true);
+      }
+    });
+    actions.appendChild(copyBtn);
+    
+    // Delete button
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "history-item-btn delete-btn";
+    deleteBtn.title = "Delete entry";
+    deleteBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+      </svg>
+    `;
+    deleteBtn.addEventListener("click", async () => {
+      try {
+        await invoke("delete_history_entry", { id: entry.id });
+        showToast("Deleted entry");
+        loadHistory();
+      } catch (err) {
+        showToast(`Failed to delete: ${err}`, true);
+      }
+    });
+    actions.appendChild(deleteBtn);
+    
+    header.appendChild(actions);
+    item.appendChild(header);
+    
+    // Body
+    const body = document.createElement("div");
+    body.className = "history-item-body";
+    body.textContent = entry.text;
+    item.appendChild(body);
+    
+    historyList.appendChild(item);
+  });
+}
+
+function formatTimestamp(tsString) {
+  // SQLite format: "2026-05-21 22:34:56"
+  try {
+    const parts = tsString.split(" ");
+    if (parts.length < 2) return tsString;
+    const dateParts = parts[0].split("-");
+    const timeParts = parts[1].split(":");
+    if (dateParts.length !== 3 || timeParts.length < 2) return tsString;
+    
+    const year = parseInt(dateParts[0], 10);
+    const month = parseInt(dateParts[1], 10) - 1;
+    const day = parseInt(dateParts[2], 10);
+    const hour = parseInt(timeParts[0], 10);
+    const minute = parseInt(timeParts[1], 10);
+    
+    const date = new Date(year, month, day, hour, minute);
+    
+    return date.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    }) + ' at ' + date.toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch (e) {
+    return tsString;
+  }
 }
 
 init();

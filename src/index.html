@@ -21,6 +21,7 @@
         </div>
         <nav class="nav-tabs">
           <button class="tab-btn active" id="tab-dash">Dashboard</button>
+          <button class="tab-btn" id="tab-history">History</button>
           <button class="tab-btn" id="tab-settings">Settings</button>
         </nav>
       </header>
@@ -68,6 +69,35 @@
               </div>
               <div class="last-prepared-body">
                 <textarea id="last-prepared-text" readonly placeholder="Your transcribed text will appear here..."></textarea>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- History Tab -->
+        <section class="tab-content" id="content-history">
+          <div class="history-view">
+            <div class="history-header">
+              <div class="history-title-row">
+                <span class="history-title">Dictation History</span>
+                <span class="history-count-badge" id="history-count">0 entries</span>
+              </div>
+              <button class="clear-all-btn" id="btn-clear-history" title="Clear all history">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+                <span>Clear All</span>
+              </button>
+            </div>
+            
+            <div class="history-list-container">
+              <div class="history-empty-state" id="history-empty">
+                <div class="empty-icon">📂</div>
+                <div class="empty-title">No dictation history</div>
+                <div class="empty-subtitle">Your transcribed texts will be saved here automatically.</div>
+              </div>
+              <div class="history-list" id="history-list">
+                <!-- Dynamically populated -->
               </div>
             </div>
           </div>
