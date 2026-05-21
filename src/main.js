@@ -20,8 +20,14 @@ const btnRecord = document.getElementById("btn-record");
 const statusBadge = document.getElementById("status-badge");
 const statusLabel = document.getElementById("status-label");
 
+const selectTranscriptionProvider = document.getElementById("transcription-provider-select");
 const inputApiKey = document.getElementById("api-key");
 const apiKeyGroup = document.getElementById("api-key-group");
+const groupOpenAi = document.getElementById("openai-settings");
+const inputOpenAiApiKey = document.getElementById("openai-api-key");
+const btnToggleOpenAiKey = document.getElementById("btn-toggle-openai-key");
+const inputOpenAiModel = document.getElementById("openai-model");
+
 const selectProvider = document.getElementById("provider-select");
 const groupGemini = document.getElementById("gemini-settings");
 const selectModel = document.getElementById("model-select");
@@ -30,6 +36,7 @@ const inputCustomModel = document.getElementById("custom-model");
 const groupOllama = document.getElementById("ollama-settings");
 const inputOllamaUrl = document.getElementById("ollama-url");
 const inputOllamaModel = document.getElementById("ollama-model");
+const groupRefinePrompt = document.getElementById("refine-prompt-group");
 const inputPrompt = document.getElementById("refine-prompt");
 const btnSaveSettings = document.getElementById("btn-save-settings");
 const btnToggleKey = document.getElementById("btn-toggle-key");
@@ -44,6 +51,7 @@ const ctx = canvas.getContext("2d");
 // App State
 let currentStatus = "Idle";
 let isPasswordVisible = false;
+let isOpenAiPasswordVisible = false;
 let phase = 0;
 let isTestingMic = false;
 let micLevelUnlisten = null;
@@ -89,6 +97,13 @@ btnToggleKey.addEventListener("click", () => {
   btnToggleKey.textContent = isPasswordVisible ? "🙈" : "👁️";
 });
 
+// Toggle OpenAI API Key Visibility
+btnToggleOpenAiKey.addEventListener("click", () => {
+  isOpenAiPasswordVisible = !isOpenAiPasswordVisible;
+  inputOpenAiApiKey.type = isOpenAiPasswordVisible ? "text" : "password";
+  btnToggleOpenAiKey.textContent = isOpenAiPasswordVisible ? "🙈" : "👁️";
+});
+
 // Toggle custom model input group based on dropdown selection
 selectModel.addEventListener("change", () => {
   if (selectModel.value === "custom") {
@@ -98,18 +113,53 @@ selectModel.addEventListener("change", () => {
   }
 });
 
-// Toggle provider-specific settings based on provider dropdown selection
-selectProvider.addEventListener("change", () => {
-  if (selectProvider.value === "ollama") {
-    groupOllama.style.display = "block";
-    groupGemini.style.display = "none";
-    apiKeyGroup.style.display = "none";
+// Update visibility of setting blocks based on selected providers
+function updateSettingsVisibility() {
+  const transProvider = selectTranscriptionProvider.value;
+  const refProvider = selectProvider.value;
+
+  // 1. Transcription Provider Inputs visibility
+  if (transProvider === "openai") {
+    groupOpenAi.style.display = "block";
   } else {
-    groupOllama.style.display = "none";
-    groupGemini.style.display = "block";
-    apiKeyGroup.style.display = "flex";
+    groupOpenAi.style.display = "none";
   }
-});
+
+  // 2. Gemini API Key visibility
+  if (transProvider === "gemini" || refProvider === "gemini") {
+    apiKeyGroup.style.display = "flex";
+    
+    const label = apiKeyGroup.querySelector(".form-label");
+    if (transProvider === "gemini" && refProvider === "gemini") {
+      label.textContent = "Gemini API Key (Used for transcription & refinement)";
+    } else if (transProvider === "gemini") {
+      label.textContent = "Gemini API Key (Used for transcription)";
+    } else {
+      label.textContent = "Gemini API Key (Used for refinement)";
+    }
+  } else {
+    apiKeyGroup.style.display = "none";
+  }
+
+  // 3. Refinement Provider visibility
+  if (refProvider === "gemini") {
+    groupGemini.style.display = "block";
+    groupOllama.style.display = "none";
+    groupRefinePrompt.style.display = "block";
+  } else if (refProvider === "ollama") {
+    groupGemini.style.display = "none";
+    groupOllama.style.display = "block";
+    groupRefinePrompt.style.display = "block";
+  } else {
+    // "none"
+    groupGemini.style.display = "none";
+    groupOllama.style.display = "none";
+    groupRefinePrompt.style.display = "none";
+  }
+}
+
+selectTranscriptionProvider.addEventListener("change", updateSettingsVisibility);
+selectProvider.addEventListener("change", updateSettingsVisibility);
 
 // Toast Manager
 function showToast(message, isError = false) {
@@ -147,6 +197,9 @@ btnSaveSettings.addEventListener("click", async () => {
     ollama_url: inputOllamaUrl.value.trim(),
     ollama_model: inputOllamaModel.value.trim(),
     audio_device: selectMic.value,
+    transcription_provider: selectTranscriptionProvider.value,
+    openai_api_key: inputOpenAiApiKey.value.trim(),
+    openai_model: inputOpenAiModel.value.trim(),
   };
 
   try {
@@ -252,23 +305,25 @@ async function initConfig() {
     inputApiKey.value = config.api_key || "";
     inputPrompt.value = config.prompt || "";
     
+    selectTranscriptionProvider.value = config.transcription_provider || "gemini";
+    inputOpenAiApiKey.value = config.openai_api_key || "";
+    inputOpenAiModel.value = config.openai_model || "whisper-1";
+
     const savedProvider = config.provider || "gemini";
     selectProvider.value = savedProvider;
-    if (savedProvider === "ollama") {
-      groupOllama.style.display = "block";
-      groupGemini.style.display = "none";
-      apiKeyGroup.style.display = "none";
-    } else {
-      groupOllama.style.display = "none";
-      groupGemini.style.display = "block";
-      apiKeyGroup.style.display = "flex";
-    }
+    
+    updateSettingsVisibility();
 
     inputOllamaUrl.value = config.ollama_url || "http://localhost:11434";
     inputOllamaModel.value = config.ollama_model || "llama3";
-    
-    const savedModel = config.model || "gemini-1.5-flash";
-    const presetModels = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash", "gemini-2.5-flash"];
+    let savedModel = config.model || "gemini-2.0-flash";
+    if (savedModel === "gemini-1.5-flash") {
+      savedModel = "gemini-2.0-flash";
+      // Save healed config back
+      config.model = "gemini-2.0-flash";
+      invoke("save_config", { config }).catch((err) => console.error("Failed to auto-migrate config model:", err));
+    }
+    const presetModels = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-pro"];
     
     if (presetModels.includes(savedModel)) {
       selectModel.value = savedModel;
@@ -338,7 +393,7 @@ function draw() {
   phase += 0.05;
 
   if (currentStatus === "Recording") {
-    const targetScale = 0.1 + (recordingMicLevel / 100.0) * 0.9;
+    const targetScale = recordingMicLevel / 100.0;
     // Smooth transition: 85% of current scale + 15% of target scale
     currentAmpScale += (targetScale - currentAmpScale) * 0.15;
     

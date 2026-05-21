@@ -125,49 +125,107 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
     tauri::async_runtime::spawn(async move {
         let app_state = app_handle_clone.state::<AppState>();
         
-        if api_config.api_key.trim().is_empty() {
-            update_status(&app_handle_clone, &app_state, "Error: Missing API Key");
+        let tx_provider = api_config.transcription_provider.to_string();
+        let openai_api_key = api_config.openai_api_key.trim().to_string();
+        let api_key = api_config.api_key.trim().to_string();
+        let provider = api_config.provider.to_string(); // provider maps to refinement provider
+
+        if tx_provider == "openai" && openai_api_key.is_empty() {
+            update_status(&app_handle_clone, &app_state, "Error: Missing OpenAI Key");
             tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
             update_status(&app_handle_clone, &app_state, "Idle");
             return;
         }
 
-        let api_key = api_config.api_key.trim().to_string();
+        if (tx_provider == "gemini" || provider == "gemini") && api_key.is_empty() {
+            update_status(&app_handle_clone, &app_state, "Error: Missing Gemini Key");
+            tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+            update_status(&app_handle_clone, &app_state, "Idle");
+            return;
+        }
+
         let prompt = api_config.prompt.to_string();
         let model = api_config.model.to_string();
-        let provider = api_config.provider.to_string();
         let ollama_url = api_config.ollama_url.to_string();
         let ollama_model = api_config.ollama_model.to_string();
+        let openai_model = api_config.openai_model.to_string();
 
-        let result = if provider == "ollama" {
-            let verbatim_prompt = "Transcribe the audio verbatim. Keep all original words, sounds, and filler sounds.";
-            match crate::api::transcribe_and_clean_gemini(
-                &temp_file_str,
-                &api_key,
-                verbatim_prompt,
-                &model,
-            ).await {
-                Ok(raw_text) => {
-                    if raw_text.is_empty() {
-                        Ok("".to_string())
-                    } else {
-                        crate::api::refine_with_ollama(
-                            &ollama_url,
-                            &ollama_model,
-                            &prompt,
-                            &raw_text,
-                        ).await
+        let result = match tx_provider.as_str() {
+            "openai" => {
+                match crate::api::transcribe_openai(
+                    &temp_file_str,
+                    &openai_api_key,
+                    &openai_model,
+                ).await {
+                    Ok(raw_text) => {
+                        if raw_text.is_empty() {
+                            Ok("".to_string())
+                        } else {
+                            match provider.as_str() {
+                                "ollama" => {
+                                    crate::api::refine_with_ollama(
+                                        &ollama_url,
+                                        &ollama_model,
+                                        &prompt,
+                                        &raw_text,
+                                    ).await
+                                }
+                                "gemini" => {
+                                    crate::api::refine_with_gemini(
+                                        &api_key,
+                                        &model,
+                                        &prompt,
+                                        &raw_text,
+                                    ).await
+                                }
+                                _ => Ok(raw_text),
+                            }
+                        }
                     }
+                    Err(e) => Err(e),
                 }
-                Err(e) => Err(e),
             }
-        } else {
-            crate::api::transcribe_and_clean_gemini(
-                &temp_file_str,
-                &api_key,
-                &prompt,
-                &model,
-            ).await
+            _ => { // "gemini"
+                if provider == "ollama" {
+                    let verbatim_prompt = "Transcribe the audio verbatim. Keep all original words, sounds, and filler sounds.";
+                    match crate::api::transcribe_and_clean_gemini(
+                        &temp_file_str,
+                        &api_key,
+                        verbatim_prompt,
+                        "gemini-2.0-flash",
+                    ).await {
+                        Ok(raw_text) => {
+                            if raw_text.is_empty() {
+                                Ok("".to_string())
+                            } else {
+                                crate::api::refine_with_ollama(
+                                    &ollama_url,
+                                    &ollama_model,
+                                    &prompt,
+                                    &raw_text,
+                                ).await
+                            }
+                        }
+                        Err(e) => Err(e),
+                    }
+                } else if provider == "gemini" {
+                    crate::api::transcribe_and_clean_gemini(
+                        &temp_file_str,
+                        &api_key,
+                        &prompt,
+                        &model,
+                    ).await
+                } else {
+                    // Refinement is "none"
+                    let verbatim_prompt = "Transcribe the audio verbatim. Keep all original words, sounds, and filler sounds.";
+                    crate::api::transcribe_and_clean_gemini(
+                        &temp_file_str,
+                        &api_key,
+                        verbatim_prompt,
+                        "gemini-2.0-flash",
+                    ).await
+                }
+            }
         };
 
         match result {
