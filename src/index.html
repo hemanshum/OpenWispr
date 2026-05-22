@@ -183,6 +183,7 @@
                   <option value="gemini">Google Gemini (Cloud)</option>
                   <option value="openai">OpenAI Whisper (Cloud)</option>
                   <option value="local_whisper">Local Whisper (Offline)</option>
+                  <option value="local_parakeet">Nvidia Parakeet V3 (Offline)</option>
                 </select>
               </div>
 
@@ -259,6 +260,29 @@
                     <option value="large-v3">Large V3 (Most accurate, slowest)</option>
                     <option value="turbo">Turbo (Modern large variant)</option>
                   </select>
+                </div>
+              </div>
+
+              <!-- Offline Model Manager Card -->
+              <div id="offline-model-card" class="settings-card" style="display: none; margin-top: 16px;">
+                <div class="settings-card-title">Offline Model Status</div>
+                <div class="model-status-row">
+                  <div class="model-status-info">
+                    <span class="model-name-label" id="model-name-display">Nvidia Parakeet V3</span>
+                    <span class="model-status-badge" id="model-status-badge">Not Downloaded</span>
+                  </div>
+                  <button class="action-btn" id="btn-download-model" type="button">Download Model</button>
+                </div>
+                
+                <!-- Progress Container -->
+                <div class="progress-container" id="model-download-progress-container" style="display: none; margin-top: 12px;">
+                  <div class="progress-header">
+                    <span class="progress-status" id="download-status-text">Downloading...</span>
+                    <span class="progress-percent" id="download-percent-text">0%</span>
+                  </div>
+                  <div class="progress-bar-track">
+                    <div class="progress-bar-fill" id="download-progress-bar" style="width: 0%;"></div>
+                  </div>
                 </div>
               </div>
 

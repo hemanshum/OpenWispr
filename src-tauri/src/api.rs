@@ -2,6 +2,7 @@ use base64::{engine::general_purpose, Engine as _};
 use reqwest::Client;
 use serde_json::json;
 use std::fs;
+use tauri::{AppHandle, Manager, Emitter};
 
 fn get_language_name(code: &str) -> &str {
     match code {
@@ -637,5 +638,123 @@ CRITICAL SCRIPT & TRANSLATION PRESERVATION RULES:
         })?;
 
     Ok(refined_text.trim().to_string())
+}
+
+pub async fn transcribe_local_sherpa(
+    app_handle: &AppHandle,
+    wav_path: &str,
+    model_type: &str, // "whisper" or "parakeet"
+    model_id: &str,   // "whisper_tiny", "parakeet_v3", etc.
+    language: &str,
+) -> Result<String, String> {
+    // 1. Find Python executable
+    let python_cmd = find_python_cmd().ok_or_else(|| {
+        "Python was not found on your system. Please install Python (3.8+) and make sure it is added to your PATH.".to_string()
+    })?;
+
+    // 2. Check if numpy and sherpa-onnx are installed and fully functional
+    let check_status = tokio::process::Command::new(python_cmd)
+        .args(["-c", "import numpy, sherpa_onnx; sherpa_onnx.OfflineTransducerModelConfig"])
+        .output()
+        .await;
+
+    let needs_install = match check_status {
+        Ok(output) => !output.status.success(),
+        Err(_) => true,
+    };
+
+    if needs_install {
+        emit_status(app_handle, "Setting up Local Engine...");
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        emit_status(app_handle, "Installing dependencies...");
+        
+        let install_status = tokio::process::Command::new(python_cmd)
+            .args(["-m", "pip", "install", "--user", "numpy", "sherpa-onnx"])
+            .output()
+            .await
+            .map_err(|e| format!("Failed to run pip install: {}", e))?;
+
+        if !install_status.status.success() {
+            let stderr = String::from_utf8_lossy(&install_status.stderr);
+            emit_status(app_handle, "Install failed");
+            return Err(format!("Failed to install Python dependencies (numpy, sherpa-onnx) via pip. Error: {}", stderr));
+        }
+        
+        emit_status(app_handle, "Engine Ready");
+    }
+
+    // 3. Resolve paths
+    let config_dir = app_handle
+        .path()
+        .app_config_dir()
+        .map_err(|e| format!("Failed to get config directory: {}", e))?;
+    let script_path = config_dir.join("transcribe_sherpa.py");
+    let script_path_str = script_path.to_string_lossy().to_string();
+
+    let model_dir = config_dir.join("models").join(model_id);
+    if !model_dir.exists() {
+        return Err(format!("Model files directory does not exist: {}. Please download the model first.", model_dir.display()));
+    }
+    let model_dir_str = model_dir.to_string_lossy().to_string();
+
+    emit_status(app_handle, "Transcribing");
+
+    // 4. Run python script
+    let mut command = tokio::process::Command::new(python_cmd);
+    command
+        .arg(&script_path_str)
+        .arg("--wav_path")
+        .arg(wav_path)
+        .arg("--model_type")
+        .arg(model_type)
+        .arg("--model_dir")
+        .arg(&model_dir_str)
+        .arg("--language")
+        .arg(language);
+
+    let output = command
+        .output()
+        .await
+        .map_err(|e| format!("Failed to run transcription script: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Transcription script exited with error: {}", stderr));
+    }
+
+    let stdout_str = String::from_utf8_lossy(&output.stdout);
+    
+    let parsed: serde_json::Value = serde_json::from_str(&stdout_str)
+        .map_err(|e| format!("Failed to parse transcription script output JSON: {}. Raw output: {}", e, stdout_str))?;
+
+    if let Some(err_msg) = parsed["error"].as_str() {
+        return Err(format!("Error from transcription engine: {}", err_msg));
+    }
+
+    let text = parsed["text"]
+        .as_str()
+        .ok_or_else(|| format!("Invalid response format from script. Raw output: {}", stdout_str))?;
+
+    Ok(text.trim().to_string())
+}
+
+fn find_python_cmd() -> Option<&'static str> {
+    for cmd in &["python", "python3", "py"] {
+        if let Ok(output) = std::process::Command::new(cmd).arg("--version").output() {
+            if output.status.success() {
+                return Some(cmd);
+            }
+        }
+    }
+    None
+}
+
+fn emit_status(app_handle: &AppHandle, status: &str) {
+    if let Some(app_state) = app_handle.try_state::<crate::AppState>() {
+        if let Ok(mut state_status) = app_state.status.lock() {
+            *state_status = status.to_string();
+        }
+    }
+    let _ = app_handle.emit("status-changed", status);
 }
 

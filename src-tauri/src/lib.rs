@@ -4,6 +4,7 @@ mod injector;
 mod api;
 mod config;
 mod history;
+mod downloader;
 
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -168,16 +169,49 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
         let transcription_language = api_config.transcription_language.to_string();
 
         let result = match tx_provider.as_str() {
-            "local_whisper" => {
-                match crate::api::transcribe_local_whisper(
-                    &temp_file_str,
-                    &local_whisper_model,
-                    &transcription_language,
-                ).await {
-                    Ok(raw_text) => {
-                        refine_text_internal(&raw_text, &api_config).await
+            "local_whisper" | "local_parakeet" => {
+                let model_id = if tx_provider == "local_parakeet" {
+                    "parakeet_v3".to_string()
+                } else {
+                    format!("whisper_{}", local_whisper_model)
+                };
+                
+                let model_type = if tx_provider == "local_parakeet" {
+                    "parakeet"
+                } else {
+                    "whisper"
+                };
+
+                let is_downloaded = crate::downloader::check_model_downloaded(app_handle_clone.clone(), model_id.clone());
+                if is_downloaded {
+                    match crate::api::transcribe_local_sherpa(
+                        &app_handle_clone,
+                        &temp_file_str,
+                        model_type,
+                        &model_id,
+                        &transcription_language,
+                    ).await {
+                        Ok(raw_text) => {
+                            refine_text_internal(&raw_text, &api_config).await
+                        }
+                        Err(e) => Err(e),
                     }
-                    Err(e) => Err(e),
+                } else {
+                    if tx_provider == "local_whisper" {
+                        // Fall back to legacy local_whisper CLI logic if it's whisper
+                        match crate::api::transcribe_local_whisper(
+                            &temp_file_str,
+                            &local_whisper_model,
+                            &transcription_language,
+                        ).await {
+                            Ok(raw_text) => {
+                                refine_text_internal(&raw_text, &api_config).await
+                            }
+                            Err(e) => Err(e),
+                        }
+                    } else {
+                        Err("Model files are not downloaded. Please download the Nvidia Parakeet model in Settings.".to_string())
+                    }
                 }
             }
             "openai" => {
@@ -359,6 +393,14 @@ pub fn run() {
         .setup(|app| {
             let app_handle = app.handle().clone();
             
+            // Write transcribe_sherpa.py dynamically to config dir
+            if let Ok(config_dir) = app_handle.path().app_config_dir() {
+                let _ = std::fs::create_dir_all(&config_dir);
+                let script_path = config_dir.join("transcribe_sherpa.py");
+                let script_content = include_str!("transcribe_sherpa.py");
+                let _ = std::fs::write(&script_path, script_content);
+            }
+
             crate::injector::start_focus_tracker();
 
             let listener = HotkeyListener::start(move |event| {
@@ -393,7 +435,9 @@ pub fn run() {
             set_window_focusable,
             history::get_history,
             history::delete_history_entry,
-            history::clear_all_history
+            history::clear_all_history,
+            downloader::check_model_downloaded,
+            downloader::download_model_files
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

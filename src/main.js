@@ -33,6 +33,16 @@ const inputOpenAiModel = document.getElementById("openai-model");
 const groupLocalWhisper = document.getElementById("local-whisper-settings");
 const selectLocalWhisperModel = document.getElementById("local-whisper-model");
 
+// Offline Model Manager Elements
+const cardOfflineModel = document.getElementById("offline-model-card");
+const labelOfflineModelName = document.getElementById("model-name-display");
+const badgeOfflineModelStatus = document.getElementById("model-status-badge");
+const btnDownloadModel = document.getElementById("btn-download-model");
+const containerDownloadProgress = document.getElementById("model-download-progress-container");
+const textDownloadStatus = document.getElementById("download-status-text");
+const textDownloadPercent = document.getElementById("download-percent-text");
+const barDownloadProgress = document.getElementById("download-progress-bar");
+
 const selectProvider = document.getElementById("provider-select");
 const groupGemini = document.getElementById("gemini-settings");
 const inputModel = document.getElementById("model-input");
@@ -198,46 +208,54 @@ function updatePerformanceAdvisor() {
   // Reset classes
   card.className = "performance-advisor";
 
-  if (transProvider === "gemini" && refProvider === "gemini") {
+  // 1. Cloud-to-Cloud (Blazing Fast)
+  if ((transProvider === "gemini" || transProvider === "openai") && refProvider === "none") {
+    card.classList.add("speed-blazing");
+    icon.textContent = "🚀";
+    badge.textContent = "Blazing Fast (~1.5s)";
+    desc.innerHTML = `Using <strong>${transProvider === "gemini" ? "Google Gemini" : "OpenAI Whisper"} (Cloud)</strong> transcription with refinement disabled runs extremely fast. Perfect for quick, near-instant dictation.`;
+  } else if (transProvider === "gemini" && refProvider === "gemini") {
     card.classList.add("speed-blazing");
     icon.textContent = "🚀";
     badge.textContent = "Blazing Fast (~1.5s)";
     desc.innerHTML = `Using <strong>Google Gemini (Cloud)</strong> for both transcription and refinement executes in a single optimized API request. Highly recommended for near-instant responses.`;
-  } else if (transProvider === "gemini" && refProvider === "none") {
-    card.classList.add("speed-blazing");
-    icon.textContent = "🚀";
-    badge.textContent = "Blazing Fast (~1.5s)";
-    desc.innerHTML = `Using <strong>Google Gemini (Cloud)</strong> transcription with refinement disabled runs extremely fast. Perfect for quick and accurate dictation.`;
-  } else if (transProvider === "openai" && refProvider === "none") {
-    card.classList.add("speed-blazing");
-    icon.textContent = "🚀";
-    badge.textContent = "Blazing Fast (~1.5s)";
-    desc.innerHTML = `Using <strong>OpenAI Whisper (Cloud)</strong> transcription with refinement disabled is highly optimized and returns in under 2 seconds.`;
-  } else if ((transProvider === "gemini" || transProvider === "openai") && (refProvider === "gemini" || refProvider === "openai" || refProvider === "openrouter" || refProvider === "custom")) {
+  }
+  // 2. Cloud transcription + Cloud refinement (Fast)
+  else if ((transProvider === "gemini" || transProvider === "openai") && 
+             (refProvider === "gemini" || refProvider === "openai" || refProvider === "openrouter" || refProvider === "custom")) {
     card.classList.add("speed-fast");
     icon.textContent = "⚡";
     badge.textContent = "Fast (~3.0s)";
     desc.innerHTML = `Uses cloud-based transcription with <strong>${refProvider === "openai" ? "OpenAI GPT" : refProvider === "openrouter" ? "OpenRouter" : refProvider === "custom" ? "Custom API" : "Google Gemini"}</strong> refinement. Fast and highly accurate refinement with minimal network overhead.`;
-  } else if ((transProvider === "gemini" || transProvider === "openai") && refProvider === "ollama") {
-    card.classList.add("speed-slow");
-    icon.textContent = "🐢";
-    badge.textContent = "Slow (~10-30s)";
-    desc.innerHTML = `Using a cloud transcription engine but refining with a local <strong>Ollama LLM</strong> is slow due to local generation latency. Consider switching Refinement Provider to Gemini Cloud or None for a significant speedup.`;
-  } else if (transProvider === "local_whisper" && refProvider === "none") {
+  }
+  // 3. Local Parakeet / Local Whisper + No refinement (Moderate)
+  else if ((transProvider === "local_parakeet" || transProvider === "local_whisper") && refProvider === "none") {
     card.classList.add("speed-moderate");
     icon.textContent = "📊";
-    badge.textContent = "Moderate (~8-15s)";
-    desc.innerHTML = `Local offline transcription requires running Python and PyTorch model weights on your CPU. We added <strong>--fp16 False</strong> to speed it up on CPU, but switching to a Cloud provider is recommended.`;
-  } else if (transProvider === "local_whisper" && (refProvider === "gemini" || refProvider === "openai" || refProvider === "openrouter" || refProvider === "custom")) {
+    badge.textContent = "Moderate (~2.0-4.0s)";
+    desc.innerHTML = `Using <strong>${transProvider === "local_parakeet" ? "Nvidia Parakeet V3" : "Local Whisper"} (Offline)</strong> transcription via the optimized sherpa-onnx engine. Run completely offline and privately on your CPU.`;
+  }
+  // 4. Local Parakeet / Local Whisper + Cloud refinement (Moderate)
+  else if ((transProvider === "local_parakeet" || transProvider === "local_whisper") && 
+             (refProvider === "gemini" || refProvider === "openai" || refProvider === "openrouter" || refProvider === "custom")) {
+    card.classList.add("speed-moderate");
+    icon.textContent = "📊";
+    badge.textContent = "Moderate (~3.5-6.0s)";
+    desc.innerHTML = `Local offline transcription with <strong>${transProvider === "local_parakeet" ? "Nvidia Parakeet V3" : "Local Whisper"}</strong> combined with cloud refinement. A hybrid setup giving local privacy/speed for audio and high-quality LLM cleanup.`;
+  }
+  // 5. Cloud transcription + Local Ollama refinement (Slow)
+  else if ((transProvider === "gemini" || transProvider === "openai") && refProvider === "ollama") {
     card.classList.add("speed-slow");
     icon.textContent = "🐢";
-    badge.textContent = "Slow (~10-20s)";
-    desc.innerHTML = `Local Whisper offline transcription takes time to initialize on your CPU. To speed this up, use a smaller Whisper model or switch Transcription Provider to Gemini/OpenAI Cloud.`;
-  } else if (transProvider === "local_whisper" && refProvider === "ollama") {
+    badge.textContent = "Slow (~10-25s)";
+    desc.innerHTML = `Using a cloud transcription engine but refining with a local <strong>Ollama LLM</strong> is slow due to local generation latency. Consider switching Refinement Provider to Gemini Cloud or None for a significant speedup.`;
+  }
+  // 6. Local transcription + Local Ollama refinement (Very Slow)
+  else if ((transProvider === "local_parakeet" || transProvider === "local_whisper") && refProvider === "ollama") {
     card.classList.add("speed-slow");
     icon.textContent = "🐢";
     badge.textContent = "Very Slow (~20-40s+)";
-    desc.innerHTML = `Fully offline execution (Local Whisper + Local Ollama) is extremely resource-intensive and runs slowly on CPU. Use cloud-based options for the fastest experience.`;
+    desc.innerHTML = `Fully offline execution (Local ASR + Local Ollama) is secure and private but extremely resource-intensive on CPU. Expect longer processing times.`;
   }
 }
 
@@ -322,10 +340,128 @@ function updateSettingsVisibility() {
 
   // Update dynamic performance advisor
   updatePerformanceAdvisor();
+
+  // Check and update Offline Model status
+  checkOfflineModelStatus();
 }
 
 selectTranscriptionProvider.addEventListener("change", updateSettingsVisibility);
 selectProvider.addEventListener("change", updateSettingsVisibility);
+selectLocalWhisperModel.addEventListener("change", checkOfflineModelStatus);
+
+// Offline Model Manager status and download logic
+let isDownloading = false;
+
+async function checkOfflineModelStatus() {
+  const transProvider = selectTranscriptionProvider.value;
+  if (transProvider !== "local_whisper" && transProvider !== "local_parakeet") {
+    cardOfflineModel.style.display = "none";
+    return;
+  }
+
+  cardOfflineModel.style.display = "block";
+
+  let modelId = "";
+  let modelName = "";
+
+  if (transProvider === "local_parakeet") {
+    modelId = "parakeet_v3";
+    modelName = "Nvidia Parakeet V3";
+  } else {
+    const val = selectLocalWhisperModel.value;
+    modelId = "whisper_" + val;
+    modelName = "Whisper " + val.charAt(0).toUpperCase() + val.slice(1);
+  }
+
+  labelOfflineModelName.textContent = modelName;
+
+  try {
+    const isDownloaded = await invoke("check_model_downloaded", { modelId });
+    if (isDownloaded) {
+      badgeOfflineModelStatus.textContent = "Ready";
+      badgeOfflineModelStatus.className = "model-status-badge ready";
+      btnDownloadModel.textContent = "Download Again";
+      btnDownloadModel.disabled = isDownloading;
+    } else {
+      badgeOfflineModelStatus.textContent = "Not Downloaded";
+      badgeOfflineModelStatus.className = "model-status-badge not-downloaded";
+      btnDownloadModel.textContent = "Download Model";
+      btnDownloadModel.disabled = isDownloading;
+    }
+  } catch (err) {
+    console.error("Failed to check model status:", err);
+  }
+}
+
+btnDownloadModel.addEventListener("click", async () => {
+  const transProvider = selectTranscriptionProvider.value;
+  let modelId = "";
+  if (transProvider === "local_parakeet") {
+    modelId = "parakeet_v3";
+  } else if (transProvider === "local_whisper") {
+    modelId = "whisper_" + selectLocalWhisperModel.value;
+  } else {
+    return;
+  }
+
+  isDownloading = true;
+  btnDownloadModel.disabled = true;
+  badgeOfflineModelStatus.textContent = "Downloading";
+  badgeOfflineModelStatus.className = "model-status-badge downloading";
+  containerDownloadProgress.style.display = "block";
+  textDownloadStatus.textContent = "Starting download...";
+  textDownloadPercent.textContent = "0%";
+  barDownloadProgress.style.width = "0%";
+
+  try {
+    await invoke("download_model_files", { modelId });
+  } catch (err) {
+    isDownloading = false;
+    btnDownloadModel.disabled = false;
+    showToast(`Download failed: ${err}`, true);
+    checkOfflineModelStatus();
+  }
+});
+
+// Subscribe to progress events from the backend downloader
+listen("model-download-progress", (event) => {
+  const payload = event.payload;
+  const currentTransProvider = selectTranscriptionProvider.value;
+
+  let activeModelId = "";
+  if (currentTransProvider === "local_parakeet") {
+    activeModelId = "parakeet_v3";
+  } else if (currentTransProvider === "local_whisper") {
+    activeModelId = "whisper_" + selectLocalWhisperModel.value;
+  }
+
+  if (payload.model_id === activeModelId) {
+    containerDownloadProgress.style.display = "block";
+    badgeOfflineModelStatus.textContent = "Downloading";
+    badgeOfflineModelStatus.className = "model-status-badge downloading";
+
+    textDownloadStatus.textContent = payload.status;
+    textDownloadPercent.textContent = `${Math.round(payload.progress)}%`;
+    barDownloadProgress.style.width = `${payload.progress}%`;
+
+    if (payload.progress >= 100.0 && payload.file_name === "") {
+      isDownloading = false;
+      btnDownloadModel.disabled = false;
+      btnDownloadModel.textContent = "Download Again";
+      badgeOfflineModelStatus.textContent = "Ready";
+      badgeOfflineModelStatus.className = "model-status-badge ready";
+      setTimeout(() => {
+        if (!isDownloading) {
+          containerDownloadProgress.style.display = "none";
+        }
+      }, 3000);
+      showToast("Model downloaded successfully!");
+    } else {
+      isDownloading = true;
+      btnDownloadModel.disabled = true;
+    }
+  }
+});
 
 // Toast Manager
 function showToast(message, isError = false) {
