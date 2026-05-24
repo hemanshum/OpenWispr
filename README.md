@@ -1,8 +1,8 @@
-# 🎙️ OpenWispr
+# 🎙️ Murmur
 
-OpenWispr is a state-of-the-art, global voice-dictation and transcription utility designed to supercharge your writing and programming workflows. It sits unobtrusively on your desktop, listening to your voice commands, transcribing them with maximum accuracy, and injecting them immediately into your active text editor.
+Murmur is a state-of-the-art, global voice-dictation and transcription utility designed to supercharge your writing and programming workflows. It sits unobtrusively on your desktop, listening to your voice commands, transcribing them with maximum accuracy, and injecting them immediately into your active text editor.
 
-With a beautiful dark-mode glassmorphic interface, real-time waveform visualizers, and multi-LLM refinement support, OpenWispr is a premium tool built with **Tauri**, **Rust**, and **Vanilla HTML/CSS/JavaScript**.
+With a beautiful dark-mode glassmorphic interface, real-time waveform visualizers, and multi-LLM refinement support, Murmur is a premium tool built with **Tauri**, **Rust**, and **Vanilla HTML/CSS/JavaScript**.
 
 ---
 
@@ -36,7 +36,7 @@ With a beautiful dark-mode glassmorphic interface, real-time waveform visualizer
 ## 🛠️ Installation & Setup
 
 ### Prerequisites
-Before setting up OpenWispr, ensure you have the following installed on your machine:
+Before setting up Murmur, ensure you have the following installed on your machine:
 - **Rust & Cargo** (Version 1.70 or higher) -> [Install Rust](https://www.rust-lang.org/tools/install)
 - **Node.js** (v18 or higher) & **npm** -> [Install Node.js](https://nodejs.org/)
 
@@ -44,8 +44,8 @@ Before setting up OpenWispr, ensure you have the following installed on your mac
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/your-username/OpenWispr.git
-   cd OpenWispr
+   git clone https://github.com/your-username/Murmur.git
+   cd Murmur
    ```
 
 2. **Install Frontend Dependencies**
@@ -75,6 +75,6 @@ You can download the latest pre-built installer for version **0.1.1** here:
 ## 🔒 Security & Local Configs
 
 Your API keys, preferences, and dictation history are **completely private and secure**:
-- **Zero Cloud Storage**: All configurations are stored locally on your machine in your OS-specific configuration folder (e.g., `%APPDATA%/Roaming/OpenWispr/config.json` on Windows).
+- **Zero Cloud Storage**: All configurations are stored locally on your machine in your OS-specific configuration folder (e.g., `%APPDATA%/Roaming/Murmur/config.json` on Windows).
 - **Safe Repository Push**: The `config.json` file is generated outside of the workspace project folder, meaning your API keys are **never pushed to git/GitHub** when sharing or committing code.
 - **Local Database**: Dictation history is stored locally in an offline SQLite database (`history.db`) within your local app data folder and is never transmitted online.
