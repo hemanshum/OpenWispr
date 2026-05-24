@@ -167,6 +167,7 @@
             <div class="sub-nav-tabs">
               <button class="sub-tab-btn active" id="sub-tab-audio">Audio Settings</button>
               <button class="sub-tab-btn" id="sub-tab-ai">AI Settings</button>
+              <button class="sub-tab-btn" id="sub-tab-models">Models</button>
             </div>
 
             <!-- Audio Settings Tab Content -->
@@ -325,6 +326,20 @@
               <!-- Gemini Model Settings -->
               <div id="gemini-settings">
                 <div class="form-group" style="margin-top: 4px;">
+                  <label class="form-label" for="gemini-refine-api-key">Gemini API Key</label>
+                  <div class="input-container">
+                    <input
+                      type="password"
+                      id="gemini-refine-api-key"
+                      class="form-input"
+                      placeholder="Enter your Google Gemini API Key..."
+                    />
+                    <button class="input-toggle-btn" id="btn-toggle-gemini-refine-key" type="button">
+                      👁️
+                    </button>
+                  </div>
+                </div>
+                <div class="form-group" style="margin-top: 12px;">
                   <label class="form-label" for="model-input">Gemini Model Name</label>
                   <input
                     type="text"
@@ -476,6 +491,121 @@
                 </div>
                 <div class="advisor-description" id="advisor-description">
                   Using Google Gemini for both transcription and refinement is highly recommended for near-instant responses.
+                </div>
+              </div>
+            </div>
+
+            <!-- Models Management Tab Content -->
+            <div class="sub-tab-content" id="sub-content-models">
+              <div class="settings-section-title" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; color: #a855f7;">Local Models Manager</div>
+              <div class="model-manager-description" style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 16px; text-align: left; line-height: 1.4;">
+                Manage offline model files for local transcription. Downloaded models can run fully offline, privately, and securely on your device.
+              </div>
+
+              <!-- Model List Container -->
+              <div class="model-manager-list" id="model-manager-list">
+                <!-- Parakeet V3 -->
+                <div class="model-card" data-model-id="parakeet_v3">
+                  <div class="model-card-header">
+                    <div class="model-card-info">
+                      <div class="model-card-name">Nvidia Parakeet V3</div>
+                      <div class="model-card-meta">Local Offline Engine | ~110 MB | Fast & accurate</div>
+                    </div>
+                    <div class="model-card-status">
+                      <span class="model-status-badge not-downloaded" id="status-badge-parakeet_v3">Not Downloaded</span>
+                    </div>
+                  </div>
+                  <div class="model-card-progress-container" id="progress-container-parakeet_v3" style="display: none;">
+                    <div class="progress-header">
+                      <span class="progress-status" id="progress-status-parakeet_v3">Downloading...</span>
+                      <span class="progress-percent" id="progress-percent-parakeet_v3">0%</span>
+                    </div>
+                    <div class="progress-bar-track">
+                      <div class="progress-bar-fill" id="progress-bar-parakeet_v3" style="width: 0%;"></div>
+                    </div>
+                  </div>
+                  <div class="model-card-actions">
+                    <button class="model-action-btn btn-download" id="btn-download-parakeet_v3" type="button">Download</button>
+                    <button class="model-action-btn btn-delete" id="btn-delete-parakeet_v3" style="display: none;" type="button">Delete</button>
+                  </div>
+                </div>
+
+                <!-- Whisper Tiny -->
+                <div class="model-card" data-model-id="whisper_tiny">
+                  <div class="model-card-header">
+                    <div class="model-card-info">
+                      <div class="model-card-name">Whisper Tiny</div>
+                      <div class="model-card-meta">Local Whisper Engine | ~75 MB | Blazing fast, lower accuracy</div>
+                    </div>
+                    <div class="model-card-status">
+                      <span class="model-status-badge not-downloaded" id="status-badge-whisper_tiny">Not Downloaded</span>
+                    </div>
+                  </div>
+                  <div class="model-card-progress-container" id="progress-container-whisper_tiny" style="display: none;">
+                    <div class="progress-header">
+                      <span class="progress-status" id="progress-status-whisper_tiny">Downloading...</span>
+                      <span class="progress-percent" id="progress-percent-whisper_tiny">0%</span>
+                    </div>
+                    <div class="progress-bar-track">
+                      <div class="progress-bar-fill" id="progress-bar-whisper_tiny" style="width: 0%;"></div>
+                    </div>
+                  </div>
+                  <div class="model-card-actions">
+                    <button class="model-action-btn btn-download" id="btn-download-whisper_tiny" type="button">Download</button>
+                    <button class="model-action-btn btn-delete" id="btn-delete-whisper_tiny" style="display: none;" type="button">Delete</button>
+                  </div>
+                </div>
+
+                <!-- Whisper Base -->
+                <div class="model-card" data-model-id="whisper_base">
+                  <div class="model-card-header">
+                    <div class="model-card-info">
+                      <div class="model-card-name">Whisper Base</div>
+                      <div class="model-card-meta">Local Whisper Engine | ~140 MB | Recommended balance</div>
+                    </div>
+                    <div class="model-card-status">
+                      <span class="model-status-badge not-downloaded" id="status-badge-whisper_base">Not Downloaded</span>
+                    </div>
+                  </div>
+                  <div class="model-card-progress-container" id="progress-container-whisper_base" style="display: none;">
+                    <div class="progress-header">
+                      <span class="progress-status" id="progress-status-whisper_base">Downloading...</span>
+                      <span class="progress-percent" id="progress-percent-whisper_base">0%</span>
+                    </div>
+                    <div class="progress-bar-track">
+                      <div class="progress-bar-fill" id="progress-bar-whisper_base" style="width: 0%;"></div>
+                    </div>
+                  </div>
+                  <div class="model-card-actions">
+                    <button class="model-action-btn btn-download" id="btn-download-whisper_base" type="button">Download</button>
+                    <button class="model-action-btn btn-delete" id="btn-delete-whisper_base" style="display: none;" type="button">Delete</button>
+                  </div>
+                </div>
+
+                <!-- Whisper Small -->
+                <div class="model-card" data-model-id="whisper_small">
+                  <div class="model-card-header">
+                    <div class="model-card-info">
+                      <div class="model-card-name">Whisper Small</div>
+                      <div class="model-card-meta">Local Whisper Engine | ~460 MB | High accuracy, slower</div>
+                    </div>
+                    <div class="model-card-status">
+                      <span class="model-status-badge not-downloaded" id="status-badge-whisper_small">Not Downloaded</span>
+                    </div>
+                  </div>
+                  <div class="model-card-progress-container" id="progress-container-whisper_small" style="display: none;">
+                    <div class="progress-header">
+                      <span class="progress-status" id="progress-status-whisper_small">Downloading...</span>
+                      <span class="progress-percent" id="progress-percent-whisper_small">0%</span>
+                    </div>
+                    <div class="progress-bar-track">
+                      <div class="progress-bar-fill" id="progress-bar-whisper_small" style="width: 0%;"></div>
+                    </div>
+                  </div>
+                  <div class="model-card-actions">
+                    <button class="model-action-btn btn-download" id="btn-download-whisper_small" type="button">Download</button>
+                    <button class="model-action-btn btn-delete" id="btn-delete-whisper_small" style="display: none;" type="button">Delete</button>
+                  </div>
                 </div>
               </div>
             </div>

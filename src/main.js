@@ -11,8 +11,10 @@ const contentSettings = document.getElementById("content-settings");
 
 const subTabAudio = document.getElementById("sub-tab-audio");
 const subTabAi = document.getElementById("sub-tab-ai");
+const subTabModels = document.getElementById("sub-tab-models");
 const subContentAudio = document.getElementById("sub-content-audio");
 const subContentAi = document.getElementById("sub-content-ai");
+const subContentModels = document.getElementById("sub-content-models");
 
 const selectMic = document.getElementById("mic-select");
 const btnTestMic = document.getElementById("btn-test-mic");
@@ -58,6 +60,9 @@ const dashboardLanguageSelect = document.getElementById("dashboard-language-sele
 const dashboardPresetBadges = document.querySelectorAll(".dashboard-preset-badge");
 
 // New Refinement Provider Elements
+const inputGeminiRefineApiKey = document.getElementById("gemini-refine-api-key");
+const btnToggleGeminiRefineKey = document.getElementById("btn-toggle-gemini-refine-key");
+
 const groupOpenAiRefine = document.getElementById("openai-refine-settings");
 const inputOpenAiRefineApiKey = document.getElementById("openai-refine-api-key");
 const btnToggleOpenAiRefineKey = document.getElementById("btn-toggle-openai-refine-key");
@@ -132,16 +137,31 @@ tabSettings.addEventListener("click", () => {
 subTabAudio.addEventListener("click", () => {
   subTabAudio.classList.add("active");
   subTabAi.classList.remove("active");
+  subTabModels.classList.remove("active");
   subContentAudio.classList.add("active");
   subContentAi.classList.remove("active");
+  subContentModels.classList.remove("active");
 });
 
 subTabAi.addEventListener("click", () => {
   stopMicTesting(); // Stop mic test when switching away from audio tab
   subTabAi.classList.add("active");
   subTabAudio.classList.remove("active");
+  subTabModels.classList.remove("active");
   subContentAi.classList.add("active");
   subContentAudio.classList.remove("active");
+  subContentModels.classList.remove("active");
+});
+
+subTabModels.addEventListener("click", () => {
+  stopMicTesting();
+  subTabModels.classList.add("active");
+  subTabAudio.classList.remove("active");
+  subTabAi.classList.remove("active");
+  subContentModels.classList.add("active");
+  subContentAudio.classList.remove("active");
+  subContentAi.classList.remove("active");
+  loadModelsManager(); // Refresh statuses on tab open
 });
 
 // Toggle API Key Visibility
@@ -189,6 +209,21 @@ inputOpenAiApiKey.addEventListener("input", () => {
 });
 inputOpenAiRefineApiKey.addEventListener("input", () => {
   inputOpenAiApiKey.value = inputOpenAiRefineApiKey.value;
+});
+
+// Sync Gemini API Key inputs in real time
+inputApiKey.addEventListener("input", () => {
+  inputGeminiRefineApiKey.value = inputApiKey.value;
+});
+inputGeminiRefineApiKey.addEventListener("input", () => {
+  inputApiKey.value = inputGeminiRefineApiKey.value;
+});
+
+let isGeminiRefinePasswordVisible = false;
+btnToggleGeminiRefineKey.addEventListener("click", () => {
+  isGeminiRefinePasswordVisible = !isGeminiRefinePasswordVisible;
+  inputGeminiRefineApiKey.type = isGeminiRefinePasswordVisible ? "text" : "password";
+  btnToggleGeminiRefineKey.textContent = isGeminiRefinePasswordVisible ? "🙈" : "👁️";
 });
 
 // Model input event listener (removed selectModel dropdown listener)
@@ -276,18 +311,11 @@ function updateSettingsVisibility() {
     groupLocalWhisper.style.display = "none";
   }
 
-  // 2. Gemini API Key visibility
-  if (transProvider === "gemini" || refProvider === "gemini") {
+  // 2. Gemini API Key visibility (Transcription section)
+  if (transProvider === "gemini") {
     apiKeyGroup.style.display = "flex";
-    
     const label = apiKeyGroup.querySelector(".form-label");
-    if (transProvider === "gemini" && refProvider === "gemini") {
-      label.textContent = "Gemini API Key (Used for transcription & refinement)";
-    } else if (transProvider === "gemini") {
-      label.textContent = "Gemini API Key (Used for transcription)";
-    } else {
-      label.textContent = "Gemini API Key (Used for refinement)";
-    }
+    label.textContent = "Gemini API Key (Used for transcription)";
   } else {
     apiKeyGroup.style.display = "none";
   }
@@ -380,11 +408,11 @@ async function checkOfflineModelStatus() {
     if (isDownloaded) {
       badgeOfflineModelStatus.textContent = "Ready";
       badgeOfflineModelStatus.className = "model-status-badge ready";
-      btnDownloadModel.textContent = "Download Again";
-      btnDownloadModel.disabled = isDownloading;
+      btnDownloadModel.style.display = "none"; // Hide if already downloaded
     } else {
       badgeOfflineModelStatus.textContent = "Not Downloaded";
       badgeOfflineModelStatus.className = "model-status-badge not-downloaded";
+      btnDownloadModel.style.display = "block"; // Show to download
       btnDownloadModel.textContent = "Download Model";
       btnDownloadModel.disabled = isDownloading;
     }
@@ -406,6 +434,7 @@ btnDownloadModel.addEventListener("click", async () => {
 
   isDownloading = true;
   btnDownloadModel.disabled = true;
+  btnDownloadModel.style.display = "none";
   badgeOfflineModelStatus.textContent = "Downloading";
   badgeOfflineModelStatus.className = "model-status-badge downloading";
   containerDownloadProgress.style.display = "block";
@@ -418,16 +447,156 @@ btnDownloadModel.addEventListener("click", async () => {
   } catch (err) {
     isDownloading = false;
     btnDownloadModel.disabled = false;
+    btnDownloadModel.style.display = "block";
     showToast(`Download failed: ${err}`, true);
     checkOfflineModelStatus();
   }
 });
 
+// Models Manager tab functions
+async function loadModelsManager() {
+  const models = ["parakeet_v3", "whisper_tiny", "whisper_base", "whisper_small"];
+  for (const modelId of models) {
+    try {
+      const isDownloaded = await invoke("check_model_downloaded", { modelId });
+      updateModelCardUI(modelId, isDownloaded);
+    } catch (err) {
+      console.error(`Failed to check model ${modelId} status:`, err);
+    }
+  }
+}
+
+function updateModelCardUI(modelId, isDownloaded, isDownloading = false) {
+  const badge = document.getElementById(`status-badge-${modelId}`);
+  const btnDownload = document.getElementById(`btn-download-${modelId}`);
+  const btnDelete = document.getElementById(`btn-delete-${modelId}`);
+  const progressContainer = document.getElementById(`progress-container-${modelId}`);
+
+  if (!badge || !btnDownload || !btnDelete) return;
+
+  if (isDownloading) {
+    badge.textContent = "Downloading";
+    badge.className = "model-status-badge downloading";
+    btnDownload.style.display = "none";
+    btnDelete.style.display = "none";
+  } else if (isDownloaded) {
+    badge.textContent = "Ready";
+    badge.className = "model-status-badge ready";
+    btnDownload.style.display = "none";
+    btnDelete.style.display = "block";
+    btnDelete.disabled = false;
+    if (progressContainer) progressContainer.style.display = "none";
+  } else {
+    badge.textContent = "Not Downloaded";
+    badge.className = "model-status-badge not-downloaded";
+    btnDownload.style.display = "block";
+    btnDownload.disabled = false;
+    btnDelete.style.display = "none";
+    if (progressContainer) progressContainer.style.display = "none";
+  }
+}
+
+async function downloadModelFromManager(modelId) {
+  const btnDownload = document.getElementById(`btn-download-${modelId}`);
+  const badge = document.getElementById(`status-badge-${modelId}`);
+  const progressContainer = document.getElementById(`progress-container-${modelId}`);
+  const progressStatus = document.getElementById(`progress-status-${modelId}`);
+  const progressPercent = document.getElementById(`progress-percent-${modelId}`);
+  const progressBar = document.getElementById(`progress-bar-${modelId}`);
+
+  if (btnDownload) btnDownload.disabled = true;
+  if (badge) {
+    badge.textContent = "Downloading";
+    badge.className = "model-status-badge downloading";
+  }
+  if (progressContainer) {
+    progressContainer.style.display = "block";
+    if (progressStatus) progressStatus.textContent = "Starting download...";
+    if (progressPercent) progressPercent.textContent = "0%";
+    if (progressBar) progressBar.style.width = "0%";
+  }
+
+  isDownloading = true;
+
+  try {
+    await invoke("download_model_files", { modelId });
+  } catch (err) {
+    isDownloading = false;
+    showToast(`Download failed: ${err}`, true);
+    loadModelsManager();
+  }
+}
+
+async function deleteModelFromManager(modelId) {
+  if (confirm(`Are you sure you want to delete the offline files for this model? This action cannot be undone.`)) {
+    const btnDelete = document.getElementById(`btn-delete-${modelId}`);
+    if (btnDelete) btnDelete.disabled = true;
+    try {
+      await invoke("delete_model_files", { modelId });
+      showToast("Model files deleted successfully");
+      loadModelsManager();
+      // Also update the active model status card in AI settings if applicable
+      checkOfflineModelStatus();
+    } catch (err) {
+      showToast(`Failed to delete model: ${err}`, true);
+      loadModelsManager();
+    }
+  }
+}
+
+function bindModelManagerEvents() {
+  const models = ["parakeet_v3", "whisper_tiny", "whisper_base", "whisper_small"];
+  models.forEach(modelId => {
+    const btnDownload = document.getElementById(`btn-download-${modelId}`);
+    const btnDelete = document.getElementById(`btn-delete-${modelId}`);
+
+    if (btnDownload) {
+      btnDownload.addEventListener("click", () => downloadModelFromManager(modelId));
+    }
+    if (btnDelete) {
+      btnDelete.addEventListener("click", () => deleteModelFromManager(modelId));
+    }
+  });
+}
+
 // Subscribe to progress events from the backend downloader
 listen("model-download-progress", (event) => {
-  const payload = event.payload;
-  const currentTransProvider = selectTranscriptionProvider.value;
+  const payload = event.payload; // { model_id, file_index, total_files, file_name, progress, status }
+  const modelId = payload.model_id;
 
+  // 1. Update Models Manager view elements
+  const managerContainer = document.getElementById(`progress-container-${modelId}`);
+  const managerStatus = document.getElementById(`progress-status-${modelId}`);
+  const managerPercent = document.getElementById(`progress-percent-${modelId}`);
+  const managerBar = document.getElementById(`progress-bar-${modelId}`);
+  const managerBadge = document.getElementById(`status-badge-${modelId}`);
+  const managerDownloadBtn = document.getElementById(`btn-download-${modelId}`);
+  const managerDeleteBtn = document.getElementById(`btn-delete-${modelId}`);
+
+  if (managerBadge) {
+    managerBadge.textContent = "Downloading";
+    managerBadge.className = "model-status-badge downloading";
+  }
+  if (managerDownloadBtn) managerDownloadBtn.style.display = "none";
+  if (managerDeleteBtn) managerDeleteBtn.style.display = "none";
+
+  if (managerContainer) {
+    managerContainer.style.display = "block";
+    if (managerStatus) managerStatus.textContent = payload.status;
+    if (managerPercent) managerPercent.textContent = `${Math.round(payload.progress)}%`;
+    if (managerBar) managerBar.style.width = `${payload.progress}%`;
+  }
+
+  // Handle completion for Models Manager view
+  if (payload.progress >= 100.0 && payload.file_name === "") {
+    isDownloading = false;
+    showToast("Model downloaded successfully!");
+    loadModelsManager();
+    checkOfflineModelStatus();
+  }
+
+  // 2. Update AI Settings view elements if it's the active selected model
+  const currentTransProvider = selectTranscriptionProvider.value;
   let activeModelId = "";
   if (currentTransProvider === "local_parakeet") {
     activeModelId = "parakeet_v3";
@@ -435,29 +604,26 @@ listen("model-download-progress", (event) => {
     activeModelId = "whisper_" + selectLocalWhisperModel.value;
   }
 
-  if (payload.model_id === activeModelId) {
+  if (modelId === activeModelId) {
     containerDownloadProgress.style.display = "block";
     badgeOfflineModelStatus.textContent = "Downloading";
     badgeOfflineModelStatus.className = "model-status-badge downloading";
+    btnDownloadModel.style.display = "none";
 
     textDownloadStatus.textContent = payload.status;
     textDownloadPercent.textContent = `${Math.round(payload.progress)}%`;
     barDownloadProgress.style.width = `${payload.progress}%`;
 
     if (payload.progress >= 100.0 && payload.file_name === "") {
-      isDownloading = false;
-      btnDownloadModel.disabled = false;
-      btnDownloadModel.textContent = "Download Again";
       badgeOfflineModelStatus.textContent = "Ready";
       badgeOfflineModelStatus.className = "model-status-badge ready";
+      btnDownloadModel.style.display = "none"; // Hide since downloaded
       setTimeout(() => {
         if (!isDownloading) {
           containerDownloadProgress.style.display = "none";
         }
       }, 3000);
-      showToast("Model downloaded successfully!");
     } else {
-      isDownloading = true;
       btnDownloadModel.disabled = true;
     }
   }
@@ -709,6 +875,7 @@ async function initConfig() {
   try {
     const config = await invoke("load_config");
     inputApiKey.value = config.api_key || "";
+    inputGeminiRefineApiKey.value = config.api_key || "";
     inputPrompt.value = config.prompt || "";
     updateActivePresetBadges(config.prompt || "");
     
@@ -945,6 +1112,9 @@ async function init() {
     }
   });
   
+  bindModelManagerEvents();
+  await loadModelsManager();
+
   draw();
   await updateLastPreparedFromHistory();
 }

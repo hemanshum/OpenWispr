@@ -1366,3 +1366,110 @@ select.form-input option {
   transition: width 0.1s ease;
 }
 
+/* Model Manager List and Cards */
+.model-manager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.model-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+  transition: all 0.25s ease;
+}
+
+.model-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(168, 85, 247, 0.15);
+}
+
+.model-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.model-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.model-card-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #fff;
+}
+
+.model-card-meta {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.model-card-status {
+  flex-shrink: 0;
+}
+
+.model-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.model-action-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.model-action-btn.btn-download {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(99, 102, 241, 0.12));
+  border-color: rgba(168, 85, 247, 0.2);
+}
+
+.model-action-btn.btn-download:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--purple), var(--indigo));
+  border-color: var(--purple);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+}
+
+.model-action-btn.btn-delete {
+  background: rgba(244, 63, 94, 0.08);
+  border-color: rgba(244, 63, 94, 0.2);
+  color: #f43f5e;
+}
+
+.model-action-btn.btn-delete:hover:not(:disabled) {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.3);
+}
+
+.model-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.model-card-progress-container {
+  padding-top: 4px;
+}
+
+

@@ -226,3 +226,13 @@ pub async fn download_model_files(app_handle: AppHandle, model_id: String) -> Re
     
     Ok(())
 }
+
+#[tauri::command]
+pub fn delete_model_files(app_handle: AppHandle, model_id: String) -> Result<(), String> {
+    let model_dir = get_model_dir(&app_handle, &model_id);
+    if model_dir.exists() {
+        fs::remove_dir_all(&model_dir)
+            .map_err(|e| format!("Failed to delete model files: {}", e))?;
+    }
+    Ok(())
+}

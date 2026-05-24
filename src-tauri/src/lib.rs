@@ -444,7 +444,8 @@ pub fn run() {
             history::delete_history_entry,
             history::clear_all_history,
             downloader::check_model_downloaded,
-            downloader::download_model_files
+            downloader::download_model_files,
+            downloader::delete_model_files
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
