@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recording Overlay</title>
+  <style>
+    :root {
+      --purple: #a855f7;
+      --indigo: #6366f1;
+      --cyan: #06b6d4;
+      --red: #f43f5e;
+      --bg-glass: rgba(10, 10, 15, 0.78);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      overflow: hidden;
+      font-family: var(--font-family);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .overlay-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+      box-sizing: border-box;
+      padding: 4px;
+    }
+
+    .overlay-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      height: 100%;
+      padding: 0 16px;
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: 32px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      box-sizing: border-box;
+      gap: 12px;
+    }
+
+    /* Logo Styling */
+    .brand-logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+
+    .brand-logo-container svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .pulsing {
+      animation: logoPulse 1.8s infinite ease-in-out;
+    }
+
+    @keyframes logoPulse {
+      0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 2px rgba(168, 85, 247, 0.3));
+      }
+      50% {
+        transform: scale(1.1);
+        filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.7));
+      }
+    }
+
+    /* State Panels */
+    .state-panel {
+      display: flex;
+      align-items: center;
+      flex-grow: 1;
+      height: 100%;
+    }
+
+    /* Recording Panel (Waveform) */
+    .recording-panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      gap: 5px;
+    }
+
+    .level-bars {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      height: 32px;
+      width: 100%;
+    }
+
+    .bar {
+      width: 3.5px;
+      height: 6px;
+      border-radius: 2px;
+      background: linear-gradient(to top, var(--cyan), var(--indigo));
+      transition: height 0.08s ease;
+    }
+
+    /* Processing Panel */
+    .processing-panel {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      gap: 10px;
+    }
+
+    .bouncing-loader {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 4.5px;
+      margin-right: 2px;
+    }
+
+    .bouncing-loader div {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      animation: bounce 0.6s infinite alternate;
+    }
+
+    .bouncing-loader div:nth-child(1) {
+      background: var(--purple);
+      box-shadow: 0 0 6px var(--purple);
+    }
+
+    .bouncing-loader div:nth-child(2) {
+      background: var(--indigo);
+      box-shadow: 0 0 6px var(--indigo);
+      animation-delay: 0.2s;
+    }
+
+    .bouncing-loader div:nth-child(3) {
+      background: var(--cyan);
+      box-shadow: 0 0 6px var(--cyan);
+      animation-delay: 0.4s;
+    }
+
+    .processing-text {
+      color: #fff;
+      font-size: 0.88rem;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+      animation: textGlow 1.5s infinite alternate ease-in-out;
+    }
+
+    @keyframes bounce {
+      from {
+        transform: translateY(0);
+        opacity: 0.6;
+      }
+      to {
+        transform: translateY(-6px);
+        opacity: 1;
+        filter: brightness(1.2);
+      }
+    }
+
+    @keyframes textGlow {
+      from { opacity: 0.8; }
+      to { opacity: 1; text-shadow: 0 0 10px rgba(168, 85, 247, 0.5); }
+    }
+
+    /* Close Button */
+    .close-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(244, 63, 94, 0.12);
+      border: 1px solid rgba(244, 63, 94, 0.25);
+      color: var(--red);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .close-btn:hover {
+      background: var(--red);
+      border-color: var(--red);
+      color: #fff;
+      box-shadow: 0 0 8px rgba(244, 63, 94, 0.4);
+      transform: scale(1.08);
+    }
+
+    .close-btn svg {
+      width: 12px;
+      height: 12px;
+      fill: currentColor;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay-container">
+    <div class="overlay-bar">
+      <!-- Left: pulsing logo -->
+      <div class="brand-logo-container pulsing">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <!-- Left Side: White Vertical Lines -->
+          <line x1="24.5" y1="44" x2="24.5" y2="56" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" />
+          <line x1="33" y1="37" x2="33" y2="63" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" />
+          <line x1="41.5" y1="29" x2="41.5" y2="71" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" />
+          <line x1="50" y1="20" x2="50" y2="80" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" />
+
+          <!-- Right Side: Semi-Transparent White Horizontal Lines -->
+          <line x1="55.5" y1="30" x2="68" y2="30" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
+          <line x1="55.5" y1="36.6" x2="76" y2="36.6" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
+          <line x1="79.5" y1="36.6" x2="81.5" y2="36.6" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
+          <line x1="55.5" y1="43.3" x2="80" y2="43.3" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
+          <line x1="55.5" y1="50" x2="69" y2="50" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
+          <line x1="73.5" y1="50" x2="88" y2="50" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
+          <line x1="55.5" y1="56.6" x2="82" y2="56.6" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
+          <line x1="55.5" y1="63.3" x2="73" y2="63.3" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
+          <line x1="77.5" y1="63.3" x2="79.5" y2="63.3" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
+          <line x1="55.5" y1="70" x2="62" y2="70" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
+        </svg>
+      </div>
+
+      <!-- Center: State Panels -->
+      <div class="state-panel">
+        <!-- Recording State (Waveform levels) -->
+        <div id="recording-panel" class="recording-panel">
+          <div class="level-bars">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+          </div>
+        </div>
+
+        <!-- Processing State (Spinner + Text) -->
+        <div id="processing-panel" class="processing-panel">
+          <div class="bouncing-loader">
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
+          <span id="status-text" class="processing-text">Processing...</span>
+        </div>
+      </div>
+
+      <!-- Right: Close Button -->
+      <button class="close-btn" id="btn-cancel" title="Cancel Recording">
+        <svg viewBox="0 0 24 24">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const { invoke } = window.__TAURI__.core;
+    const { listen } = window.__TAURI__.event;
+
+    // Helper for logging
+    function log(msg) {
+      console.log(msg);
+    }
+
+    log("Overlay window loaded, elements ready.");
+
+    const recordingPanel = document.getElementById("recording-panel");
+    const processingPanel = document.getElementById("processing-panel");
+    const statusText = document.getElementById("status-text");
+    const btnCancel = document.getElementById("btn-cancel");
+    const bars = document.querySelectorAll(".bar");
+
+    log(`Found visualizer bars: ${bars.length}`);
+
+    let animationFrameId = null;
+    let targetMicLevel = 0;
+    let currentMicLevel = 0;
+    let time = 0;
+
+    // Initialize visualizer bar heights
+    function resetBars() {
+      bars.forEach(bar => {
+        bar.style.height = "5px";
+      });
+    }
+    resetBars();
+
+    function animateVisualizer() {
+      // Smooth the mic level transitions
+      currentMicLevel += (targetMicLevel - currentMicLevel) * 0.22;
+      time += 0.15;
+
+      bars.forEach((bar, idx) => {
+        // Bell-curve distribution centered around index 7 (middle of 15 bars)
+        const distance = Math.abs(idx - 7);
+        const factor = 1.0 - (distance / 8.0);
+        
+        const minHeight = 5;
+        const maxHeight = 30;
+        
+        // Base idle wiggle using sine waves
+        const idleWiggle = Math.sin(time + idx * 0.8) * 2.2 + Math.cos(time * 0.7 - idx * 0.4) * 1.2;
+        
+        // Combine smoothed mic level and idle wiggle
+        let height = minHeight;
+        if (currentMicLevel > 1.5) {
+          // Speak wave: react to voice with some noise
+          const noise = 0.85 + Math.sin(time * 2.5 + idx) * 0.15;
+          height += (currentMicLevel / 100.0) * (maxHeight - minHeight) * factor * noise;
+        } else {
+          // Idle wave: subtle movement so it doesn't look dead
+          height += Math.max(0, (idleWiggle + 1) * factor * 1.5);
+        }
+        
+        bar.style.height = `${Math.min(maxHeight, Math.max(minHeight, height))}px`;
+        
+        // Dynamically color based on volume/activity levels
+        const activeLevel = Math.max(currentMicLevel, height * 2.5);
+        if (activeLevel > 28) {
+          bar.style.background = "linear-gradient(to top, #6366f1, #a855f7)";
+        } else {
+          bar.style.background = "linear-gradient(to top, #06b6d4, #6366f1)";
+        }
+      });
+
+      animationFrameId = requestAnimationFrame(animateVisualizer);
+    }
+
+    // Listen for status events from Tauri backend
+    listen("status-changed", (event) => {
+      const status = event.payload;
+      log(`Overlay status-changed: ${status}`);
+      
+      if (status === "Recording") {
+        recordingPanel.style.display = "flex";
+        processingPanel.style.display = "none";
+        
+        if (!animationFrameId) {
+          time = 0;
+          currentMicLevel = 0;
+          targetMicLevel = 0;
+          animateVisualizer();
+          log("Started visualizer animation loop.");
+        }
+      } else {
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = null;
+          log("Stopped visualizer animation loop.");
+        }
+        
+        if (status === "Transcribing" || status === "Pasting" || status.startsWith("Error")) {
+          recordingPanel.style.display = "none";
+          processingPanel.style.display = "flex";
+          
+          if (status.startsWith("Error")) {
+            statusText.textContent = "Error occurred...";
+            statusText.style.color = "#f43f5e";
+          } else if (status === "Pasting") {
+            statusText.textContent = "Pasting...";
+            statusText.style.color = "#a855f7";
+          } else {
+            statusText.textContent = "Processing...";
+            statusText.style.color = "#fff";
+          }
+        }
+      }
+    }).catch(err => log(`Error registering status-changed listener: ${err}`));
+
+    // Listen for live recording mic volume levels (0 to 100)
+    listen("recording-mic-level", (event) => {
+      targetMicLevel = event.payload; // 0 to 100
+      
+      // Only print level once in a while to not flood logs
+      if (Math.random() < 0.05) {
+        log(`Overlay target-mic-level: ${targetMicLevel}`);
+      }
+    }).catch(err => log(`Error registering recording-mic-level listener: ${err}`));
+
+    // Handle cancel button click
+    btnCancel.addEventListener("click", async () => {
+      log("Cancel button clicked in overlay.");
+      try {
+        await invoke("cancel_recording");
+      } catch (err) {
+        log(`Failed to cancel recording: ${err}`);
+      }
+    });
+  </script>
+</body>
+</html>

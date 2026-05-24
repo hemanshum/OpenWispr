@@ -48,6 +48,12 @@ fn update_status(app_handle: &AppHandle, state: &AppState, new_status: &str) {
         *status = new_status.to_string();
     }
     let _ = app_handle.emit("status-changed", new_status);
+
+    if new_status == "Idle" || new_status.starts_with("Error") {
+        if let Some(overlay) = app_handle.get_webview_window("overlay") {
+            let _ = overlay.hide();
+        }
+    }
 }
 
 #[tauri::command]
@@ -76,6 +82,30 @@ fn start_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<
 
     recorder.start_recording(app_handle.clone(), device_name)?;
     state.is_recording.store(true, Ordering::SeqCst);
+
+    if let Some(overlay) = app_handle.get_webview_window("overlay") {
+        let overlay_clone = overlay.clone();
+        tauri::async_runtime::spawn(async move {
+            if let Some(monitor) = overlay_clone.primary_monitor().unwrap_or(None) {
+                let size = monitor.size();
+                let scale_factor = monitor.scale_factor();
+                
+                let overlay_width = 380.0;
+                let overlay_height = 64.0;
+                
+                let phys_width = (overlay_width * scale_factor) as u32;
+                let phys_height = (overlay_height * scale_factor) as u32;
+                
+                let x = (size.width - phys_width) / 2;
+                let y = size.height - phys_height - (60.0 * scale_factor) as u32;
+                
+                let _ = overlay_clone.set_size(tauri::Size::Physical(tauri::PhysicalSize::new(phys_width, phys_height)));
+                let _ = overlay_clone.set_position(tauri::Position::Physical(tauri::PhysicalPosition::new(x as i32, y as i32)));
+            }
+            let _ = overlay_clone.show();
+        });
+    }
+
     update_status(app_handle, state, "Recording");
     Ok(())
 }
@@ -328,6 +358,11 @@ fn cancel_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result
     Ok(())
 }
 
+#[tauri::command]
+fn cancel_recording(state: State<'_, AppState>, app_handle: AppHandle) -> Result<(), String> {
+    cancel_recording_internal(&app_handle, &state)
+}
+
 async fn refine_text_internal(
     raw_text: &str,
     config: &AppConfig,
@@ -505,6 +540,7 @@ pub fn run() {
             save_config,
             manual_trigger_start,
             manual_trigger_stop,
+            cancel_recording,
             get_audio_devices,
             start_mic_test,
             stop_mic_test,
