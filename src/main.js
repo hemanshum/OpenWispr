@@ -905,6 +905,17 @@ async function updateLastPreparedFromHistory() {
 async function init() {
   await initConfig();
   
+  // Get app version
+  try {
+    const version = await invoke("get_app_version");
+    const versionEl = document.getElementById("brand-version");
+    if (versionEl) {
+      versionEl.textContent = `v${version}`;
+    }
+  } catch (err) {
+    console.error("Failed to load app version:", err);
+  }
+
   // Get initial status
   try {
     const status = await invoke("get_status");

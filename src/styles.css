@@ -103,14 +103,11 @@ body::after {
 .brand-logo {
   width: 28px;
   height: 28px;
-  background: #ffffff;
-  border-radius: 8px;
+  background: transparent;
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
   overflow: hidden;
-  padding: 2px;
 }
 
 .brand-name {
@@ -121,6 +118,19 @@ body::after {
   background: linear-gradient(135deg, #ffffff 30%, #a855f7 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.brand-version {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #a855f7;
+  background: rgba(168, 85, 247, 0.08);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  padding: 1px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+  font-family: var(--font-display);
+  margin-left: 2px;
 }
 
 .nav-tabs {

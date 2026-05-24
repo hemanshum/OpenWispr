@@ -609,8 +609,8 @@ CRITICAL SCRIPT & TRANSLATION PRESERVATION RULES:
         .json(&request_body);
 
     if endpoint.contains("openrouter.ai") {
-        req = req.header("HTTP-Referer", "https://github.com/hemanshum/OpenWispr")
-                 .header("X-Title", "OpenWispr");
+        req = req.header("HTTP-Referer", "https://github.com/hemanshum/Murmur")
+                 .header("X-Title", "Murmur");
     }
 
     let response = req.send()

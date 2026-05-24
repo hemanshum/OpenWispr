@@ -26,6 +26,12 @@ fn get_status(state: State<'_, AppState>) -> String {
 }
 
 #[tauri::command]
+fn get_app_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
+
+#[tauri::command]
 fn load_config(app_handle: AppHandle) -> AppConfig {
     AppConfig::load(&app_handle)
 }
@@ -116,7 +122,7 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
     let mut recorder = state.recorder.lock().map_err(|e| format!("Lock error: {}", e))?;
     
     let temp_dir = std::env::temp_dir();
-    let temp_file_path = temp_dir.join("openwispr_recording.wav");
+    let temp_file_path = temp_dir.join("murmur_recording.wav");
     let temp_file_str = temp_file_path.to_string_lossy().to_string();
 
     recorder.stop_recording(&temp_file_str)?;
@@ -425,6 +431,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             get_status,
+            get_app_version,
             load_config,
             save_config,
             manual_trigger_start,
