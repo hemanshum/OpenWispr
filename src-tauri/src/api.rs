@@ -46,33 +46,36 @@ pub async fn transcribe_and_clean_gemini(
 The spoken language is English. You must write everything strictly in English.
 
 CRITICAL LANGUAGE RULES:
-1. WRITE ONLY IN ENGLISH: The spoken audio/text is in English. You must write everything strictly in English. Do NOT mix other languages, and do NOT use Devanagari script, Romanized Hindi, or any non-English script.
-2. TRANSLATE/CORRECT NON-ENGLISH: If there are any non-English words, phrases, or scripts in the raw input (due to transcription errors, noise, accents, or code-switching), you MUST translate them to English or correct them to fit the English context. The entire output must be 100% standard English.
-3. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
-4. NO META-TEXT: Do not add any conversational responses, notes, explanations, prefix, or suffix. Return ONLY the finalized text."
+1. FILTER BACKGROUND NOISE: Ignore any ambient noise, background chatter, crosstalk, or non-speech sounds. Do not transcribe them.
+2. WRITE ONLY IN ENGLISH: The spoken audio/text is in English. You must write everything strictly in English. Do NOT mix other languages, and do NOT use Devanagari script, Romanized Hindi, or any non-English script.
+3. TRANSLATE/CORRECT NON-ENGLISH: If there are any non-English words, phrases, or scripts in the raw input (due to transcription errors, noise, accents, or code-switching), you MUST translate them to English or correct them to fit the English context. The entire output must be 100% standard English.
+4. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
+5. NO META-TEXT: Do not add any conversational responses, notes, explanations, prefix, or suffix. Return ONLY the finalized text."
     } else if language_name == "Hindi" {
         "You are a professional voice dictation assistant. Your task is to transcribe the audio and clean it up. \
 Keep all original meaning but remove filler words (like 'um', 'uh', 'like'), correct backtracking, and format it into clean text.
 
 CRITICAL TRANSLITERATION, SCRIPT & TRANSLATION PRESERVATION RULES:
-1. DO NOT TRANSLATE: Absolutely DO NOT translate any spoken words to English or any other language. Transcribe exactly the words spoken in their native language.
-2. HINDI IN DEVANAGARI: If the speaker speaks in Hindi (or a mix of Hindi and English), you MUST write all Hindi words/phrases in Devanagari script.
-3. ENGLISH IN ENGLISH SCRIPT: Keep all English words and phrases in English (Latin script). For example, 'software engineer', 'developer', 'meeting', 'call you later' must remain in English script. Do NOT translate English words to Hindi.
-4. MIXED LANGUAGE (HINGLISH) HANDLING: For code-mixed speech (mixing Hindi and English), write each word/phrase in its respective native script (e.g., Hindi in Devanagari script, English in English script).
+1. FILTER BACKGROUND NOISE: Ignore any ambient noise, background chatter, crosstalk, or non-speech sounds. Do not transcribe them.
+2. DO NOT TRANSLATE: Absolutely DO NOT translate any spoken words to English or any other language. Transcribe exactly the words spoken in their native language.
+3. HINDI IN DEVANAGARI: If the speaker speaks in Hindi (or a mix of Hindi and English), you MUST write all Hindi words/phrases in Devanagari script.
+4. ENGLISH IN ENGLISH SCRIPT: Keep all English words and phrases in English (Latin script). For example, 'software engineer', 'developer', 'meeting', 'call you later' must remain in English script. Do NOT translate English words to Hindi.
+5. MIXED LANGUAGE (HINGLISH) HANDLING: For code-mixed speech (mixing Hindi and English), write each word/phrase in its respective native script (e.g., Hindi in Devanagari script, English in English script).
    - Example Spoken: \"Mera naam Hemanshu hai and I am a software engineer\"
    - Expected Output: \"मेरा नाम हिमांशु है and I am a software engineer\"
    - (DO NOT output: \"My name is Hemanshu and I am a software engineer\")
-5. NO META-TEXT: Do not add any conversational responses, notes, explanations, prefix, or suffix. Return ONLY the transcribed and cleaned text."
+6. NO META-TEXT: Do not add any conversational responses, notes, explanations, prefix, or suffix. Return ONLY the transcribed and cleaned text."
     } else {
         "You are a professional voice dictation assistant. Your task is to transcribe the audio and clean it up. \
 Keep all original meaning but remove filler words (like 'um', 'uh', 'like'), correct backtracking, and format it into clean text.
 
 CRITICAL SCRIPT & TRANSLATION PRESERVATION RULES:
-1. DO NOT TRANSLATE: Absolutely DO NOT translate non-English words to English. Transcribe exactly the words spoken in their native language.
-2. NATIVE SCRIPT: Write the spoken words in their respective native script (e.g., Spanish words in Spanish/Latin script, Chinese in Chinese characters, Hindi in Devanagari script).
-3. ENGLISH IN ENGLISH SCRIPT: Keep all English words and phrases in English (Latin script).
-4. MIXED LANGUAGE HANDLING: For code-mixed speech (mixing the target language and English), write each word/phrase in its respective native script.
-5. NO META-TEXT: Do not add any conversational responses, notes, explanations, prefix, or suffix. Return ONLY the transcribed and cleaned text."
+1. FILTER BACKGROUND NOISE: Ignore any ambient noise, background chatter, crosstalk, or non-speech sounds. Do not transcribe them.
+2. DO NOT TRANSLATE: Absolutely DO NOT translate non-English words to English. Transcribe exactly the words spoken in their native language.
+3. NATIVE SCRIPT: Write the spoken words in their respective native script (e.g., Spanish words in Spanish/Latin script, Chinese in Chinese characters, Hindi in Devanagari script).
+4. ENGLISH IN ENGLISH SCRIPT: Keep all English words and phrases in English (Latin script).
+5. MIXED LANGUAGE HANDLING: For code-mixed speech (mixing the target language and English), write each word/phrase in its respective native script.
+6. NO META-TEXT: Do not add any conversational responses, notes, explanations, prefix, or suffix. Return ONLY the transcribed and cleaned text."
     };
 
     let lang_instruction = if language_name == "English" {
@@ -166,21 +169,23 @@ pub async fn refine_with_ollama(
 The spoken language is English. You must write everything strictly in English.
 
 CRITICAL LANGUAGE RULES:
-1. WRITE ONLY IN ENGLISH: The spoken audio/text is in English. You must write everything strictly in English. Do NOT mix other languages, and do NOT use Devanagari script, Romanized Hindi, or any non-English script.
-2. TRANSLATE/CORRECT NON-ENGLISH: If there are any non-English words, phrases, or scripts in the raw input (due to transcription errors, noise, accents, or code-switching), you MUST translate them to English or correct them to fit the English context. The entire output must be 100% standard English.
-3. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
-4. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text."
+1. FILTER BACKGROUND NOISE: Ignore and remove any words or phrases that represent ambient noise, background chatter, crosstalk, or non-speech sounds. Do not include them in the refined text.
+2. WRITE ONLY IN ENGLISH: The spoken audio/text is in English. You must write everything strictly in English. Do NOT mix other languages, and do NOT use Devanagari script, Romanized Hindi, or any non-English script.
+3. TRANSLATE/CORRECT NON-ENGLISH: If there are any non-English words, phrases, or scripts in the raw input (due to transcription errors, noise, accents, or code-switching), you MUST translate them to English or correct them to fit the English context. The entire output must be 100% standard English.
+4. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
+5. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text."
     } else if language_name == "Hindi" {
         "You are a professional voice dictation assistant. Your task is to refine and clean up the raw transcription. \
 You must carefully process the text to ensure the correct script and language are preserved.
 
 CRITICAL TRANSLITERATION, SCRIPT & TRANSLATION PRESERVATION RULES:
-1. DETECT HINDI WORDS: Identify all Hindi words and phrases, even if they are written in Roman/Latin script (Hinglish / transliterated script, e.g., 'mera', 'naam', 'hai', 'kaise', 'ho', 'main', 'aur').
-2. WRITE HINDI IN DEVANAGARI: You MUST convert all Hindi words/phrases to Devanagari script (e.g., convert 'mera' to 'मेरा', 'naam' to 'नाम', 'hai' to 'है', 'kaise' to 'कैसे', 'ho' to 'हो').
-3. KEEP ENGLISH IN ENGLISH SCRIPT: Keep all English words and phrases in English (Latin script). For example, 'software engineer', 'developer', 'meeting', 'call you later' must remain in English script. Do NOT translate English words to Hindi.
-4. STRICTLY PROHIBIT TRANSLATION: Do NOT translate Hindi words to English (e.g., do NOT translate 'mera naam' or 'मेरा नाम' to 'my name'). Keep them in their original language, but written in Devanagari script.
-5. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
-6. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text.
+1. FILTER BACKGROUND NOISE: Ignore and remove any words or phrases that represent ambient noise, background chatter, crosstalk, or non-speech sounds. Do not include them in the refined text.
+2. DETECT HINDI WORDS: Identify all Hindi words and phrases, even if they are written in Roman/Latin script (Hinglish / transliterated script, e.g., 'mera', 'naam', 'hai', 'kaise', 'ho', 'main', 'aur').
+3. WRITE HINDI IN DEVANAGARI: You MUST convert all Hindi words/phrases to Devanagari script (e.g., convert 'mera' to 'मेरा', 'naam' to 'नाम', 'hai' to 'है', 'kaise' to 'कैसे', 'ho' to 'हो').
+4. KEEP ENGLISH IN ENGLISH SCRIPT: Keep all English words and phrases in English (Latin script). For example, 'software engineer', 'developer', 'meeting', 'call you later' must remain in English script. Do NOT translate English words to Hindi.
+5. STRICTLY PROHIBIT TRANSLATION: Do NOT translate Hindi words to English (e.g., do NOT translate 'mera naam' or 'मेरा नाम' to 'my name'). Keep them in their original language, but written in Devanagari script.
+6. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
+7. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text.
 
 EXAMPLES:
 - Input: \"mera naam hemanshu hai and I am a software engineer\"
@@ -196,12 +201,13 @@ EXAMPLES:
 You must carefully process the text to ensure the correct script and language are preserved.
 
 CRITICAL SCRIPT & TRANSLATION PRESERVATION RULES:
-1. DO NOT TRANSLATE: Absolutely DO NOT translate non-English words to English. Keep non-English words in their native language.
-2. NATIVE SCRIPT: Write all non-English words in their respective native script (e.g., Spanish words in Spanish/Latin script, Chinese in Chinese characters, Hindi in Devanagari script).
-3. KEEP ENGLISH IN ENGLISH SCRIPT: Keep all English words and phrases in English (Latin script). Do NOT translate English words to the target language.
-4. MIXED LANGUAGE HANDLING: For code-mixed text, keep each word/phrase in its native script.
-5. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
-6. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text."
+1. FILTER BACKGROUND NOISE: Ignore and remove any words or phrases that represent ambient noise, background chatter, crosstalk, or non-speech sounds. Do not include them in the refined text.
+2. DO NOT TRANSLATE: Absolutely DO NOT translate non-English words to English. Keep non-English words in their native language.
+3. NATIVE SCRIPT: Write all non-English words in their respective native script (e.g., Spanish words in Spanish/Latin script, Chinese in Chinese characters, Hindi in Devanagari script).
+4. KEEP ENGLISH IN ENGLISH SCRIPT: Keep all English words and phrases in English (Latin script). Do NOT translate English words to the target language.
+5. MIXED LANGUAGE HANDLING: For code-mixed text, keep each word/phrase in its native script.
+6. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
+7. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text."
     };
 
     let lang_instruction = if language_name == "English" {
@@ -337,21 +343,23 @@ pub async fn refine_with_gemini(
 The spoken language is English. You must write everything strictly in English.
 
 CRITICAL LANGUAGE RULES:
-1. WRITE ONLY IN ENGLISH: The spoken audio/text is in English. You must write everything strictly in English. Do NOT mix other languages, and do NOT use Devanagari script, Romanized Hindi, or any non-English script.
-2. TRANSLATE/CORRECT NON-ENGLISH: If there are any non-English words, phrases, or scripts in the raw input (due to transcription errors, noise, accents, or code-switching), you MUST translate them to English or correct them to fit the English context. The entire output must be 100% standard English.
-3. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
-4. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text."
+1. FILTER BACKGROUND NOISE: Ignore and remove any words or phrases that represent ambient noise, background chatter, crosstalk, or non-speech sounds. Do not include them in the refined text.
+2. WRITE ONLY IN ENGLISH: The spoken audio/text is in English. You must write everything strictly in English. Do NOT mix other languages, and do NOT use Devanagari script, Romanized Hindi, or any non-English script.
+3. TRANSLATE/CORRECT NON-ENGLISH: If there are any non-English words, phrases, or scripts in the raw input (due to transcription errors, noise, accents, or code-switching), you MUST translate them to English or correct them to fit the English context. The entire output must be 100% standard English.
+4. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
+5. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text."
     } else if language_name == "Hindi" {
         "You are a professional voice dictation assistant. Your task is to refine and clean up the raw transcription. \
 You must carefully process the text to ensure the correct script and language are preserved.
 
 CRITICAL TRANSLITERATION, SCRIPT & TRANSLATION PRESERVATION RULES:
-1. DETECT HINDI WORDS: Identify all Hindi words and phrases, even if they are written in Roman/Latin script (Hinglish / transliterated script, e.g., 'mera', 'naam', 'hai', 'kaise', 'ho', 'main', 'aur').
-2. WRITE HINDI IN DEVANAGARI: You MUST convert all Hindi words/phrases to Devanagari script (e.g., convert 'mera' to 'मेरा', 'naam' to 'नाम', 'hai' to 'है', 'kaise' to 'कैसे', 'ho' to 'हो').
-3. KEEP ENGLISH IN ENGLISH SCRIPT: Keep all English words and phrases in English (Latin script). For example, 'software engineer', 'developer', 'meeting', 'call you later' must remain in English script. Do NOT translate English words to Hindi.
-4. STRICTLY PROHIBIT TRANSLATION: Do NOT translate Hindi words to English (e.g., do NOT translate 'mera naam' or 'मेरा नाम' to 'my name'). Keep them in their original language, but written in Devanagari script.
-5. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
-6. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text.
+1. FILTER BACKGROUND NOISE: Ignore and remove any words or phrases that represent ambient noise, background chatter, crosstalk, or non-speech sounds. Do not include them in the refined text.
+2. DETECT HINDI WORDS: Identify all Hindi words and phrases, even if they are written in Roman/Latin script (Hinglish / transliterated script, e.g., 'mera', 'naam', 'hai', 'kaise', 'ho', 'main', 'aur').
+3. WRITE HINDI IN DEVANAGARI: You MUST convert all Hindi words/phrases to Devanagari script (e.g., convert 'mera' to 'मेरा', 'naam' to 'नाम', 'hai' to 'है', 'kaise' to 'कैसे', 'ho' to 'हो').
+4. KEEP ENGLISH IN ENGLISH SCRIPT: Keep all English words and phrases in English (Latin script). For example, 'software engineer', 'developer', 'meeting', 'call you later' must remain in English script. Do NOT translate English words to Hindi.
+5. STRICTLY PROHIBIT TRANSLATION: Do NOT translate Hindi words to English (e.g., do NOT translate 'mera naam' or 'मेरा नाम' to 'my name'). Keep them in their original language, but written in Devanagari script.
+6. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
+7. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text.
 
 EXAMPLES:
 - Input: \"mera naam hemanshu hai and I am a software engineer\"
@@ -367,12 +375,13 @@ EXAMPLES:
 You must carefully process the text to ensure the correct script and language are preserved.
 
 CRITICAL SCRIPT & TRANSLATION PRESERVATION RULES:
-1. DO NOT TRANSLATE: Absolutely DO NOT translate non-English words to English. Keep non-English words in their native language.
-2. NATIVE SCRIPT: Write all non-English words in their respective native script (e.g., Spanish words in Spanish/Latin script, Chinese in Chinese characters, Hindi in Devanagari script).
-3. KEEP ENGLISH IN ENGLISH SCRIPT: Keep all English words and phrases in English (Latin script). Do NOT translate English words to the target language.
-4. MIXED LANGUAGE HANDLING: For code-mixed text, keep each word/phrase in its native script.
-5. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
-6. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text."
+1. FILTER BACKGROUND NOISE: Ignore and remove any words or phrases that represent ambient noise, background chatter, crosstalk, or non-speech sounds. Do not include them in the refined text.
+2. DO NOT TRANSLATE: Absolutely DO NOT translate non-English words to English. Keep non-English words in their native language.
+3. NATIVE SCRIPT: Write all non-English words in their respective native script (e.g., Spanish words in Spanish/Latin script, Chinese in Chinese characters, Hindi in Devanagari script).
+4. KEEP ENGLISH IN ENGLISH SCRIPT: Keep all English words and phrases in English (Latin script). Do NOT translate English words to the target language.
+5. MIXED LANGUAGE HANDLING: For code-mixed text, keep each word/phrase in its native script.
+6. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
+7. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text."
     };
 
     let lang_instruction = if language_name == "English" {
@@ -536,21 +545,23 @@ pub async fn refine_with_openai_compatible(
 The spoken language is English. You must write everything strictly in English.
 
 CRITICAL LANGUAGE RULES:
-1. WRITE ONLY IN ENGLISH: The spoken audio/text is in English. You must write everything strictly in English. Do NOT mix other languages, and do NOT use Devanagari script, Romanized Hindi, or any non-English script.
-2. TRANSLATE/CORRECT NON-ENGLISH: If there are any non-English words, phrases, or scripts in the raw input (due to transcription errors, noise, accents, or code-switching), you MUST translate them to English or correct them to fit the English context. The entire output must be 100% standard English.
-3. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
-4. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text."
+1. FILTER BACKGROUND NOISE: Ignore and remove any words or phrases that represent ambient noise, background chatter, crosstalk, or non-speech sounds. Do not include them in the refined text.
+2. WRITE ONLY IN ENGLISH: The spoken audio/text is in English. You must write everything strictly in English. Do NOT mix other languages, and do NOT use Devanagari script, Romanized Hindi, or any non-English script.
+3. TRANSLATE/CORRECT NON-ENGLISH: If there are any non-English words, phrases, or scripts in the raw input (due to transcription errors, noise, accents, or code-switching), you MUST translate them to English or correct them to fit the English context. The entire output must be 100% standard English.
+4. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
+5. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text."
     } else if language_name == "Hindi" {
         "You are a professional voice dictation assistant. Your task is to refine and clean up the raw transcription. \
 You must carefully process the text to ensure the correct script and language are preserved.
 
 CRITICAL TRANSLITERATION, SCRIPT & TRANSLATION PRESERVATION RULES:
-1. DETECT HINDI WORDS: Identify all Hindi words and phrases, even if they are written in Roman/Latin script (Hinglish / transliterated script, e.g., 'mera', 'naam', 'hai', 'kaise', 'ho', 'main', 'aur').
-2. WRITE HINDI IN DEVANAGARI: You MUST convert all Hindi words/phrases to Devanagari script (e.g., convert 'mera' to 'मेरा', 'naam' to 'नाम', 'hai' to 'है', 'kaise' to 'कैसे', 'ho' to 'हो').
-3. KEEP ENGLISH IN ENGLISH SCRIPT: Keep all English words and phrases in English (Latin script). For example, 'software engineer', 'developer', 'meeting', 'call you later' must remain in English script. Do NOT translate English words to Hindi.
-4. STRICTLY PROHIBIT TRANSLATION: Do NOT translate Hindi words to English (e.g., do NOT translate 'mera naam' or 'मेरा नाम' to 'my name'). Keep them in their original language, but written in Devanagari script.
-5. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
-6. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text.
+1. FILTER BACKGROUND NOISE: Ignore and remove any words or phrases that represent ambient noise, background chatter, crosstalk, or non-speech sounds. Do not include them in the refined text.
+2. DETECT HINDI WORDS: Identify all Hindi words and phrases, even if they are written in Roman/Latin script (Hinglish / transliterated script, e.g., 'mera', 'naam', 'hai', 'kaise', 'ho', 'main', 'aur').
+3. WRITE HINDI IN DEVANAGARI: You MUST convert all Hindi words/phrases to Devanagari script (e.g., convert 'mera' to 'मेरा', 'naam' to 'नाम', 'hai' to 'है', 'kaise' to 'कैसे', 'ho' to 'हो').
+4. KEEP ENGLISH IN ENGLISH SCRIPT: Keep all English words and phrases in English (Latin script). For example, 'software engineer', 'developer', 'meeting', 'call you later' must remain in English script. Do NOT translate English words to Hindi.
+5. STRICTLY PROHIBIT TRANSLATION: Do NOT translate Hindi words to English (e.g., do NOT translate 'mera naam' or 'मेरा नाम' to 'my name'). Keep them in their original language, but written in Devanagari script.
+6. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
+7. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text.
 
 EXAMPLES:
 - Input: \"mera naam hemanshu hai and I am a software engineer\"
@@ -566,12 +577,13 @@ EXAMPLES:
 You must carefully process the text to ensure the correct script and language are preserved.
 
 CRITICAL SCRIPT & TRANSLATION PRESERVATION RULES:
-1. DO NOT TRANSLATE: Absolutely DO NOT translate non-English words to English. Keep non-English words in their native language.
-2. NATIVE SCRIPT: Write all non-English words in their respective native script (e.g., Spanish words in Spanish/Latin script, Chinese in Chinese characters, Hindi in Devanagari script).
-3. KEEP ENGLISH IN ENGLISH SCRIPT: Keep all English words and phrases in English (Latin script). Do NOT translate English words to the target language.
-4. MIXED LANGUAGE HANDLING: For code-mixed text, keep each word/phrase in its native script.
-5. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
-6. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text."
+1. FILTER BACKGROUND NOISE: Ignore and remove any words or phrases that represent ambient noise, background chatter, crosstalk, or non-speech sounds. Do not include them in the refined text.
+2. DO NOT TRANSLATE: Absolutely DO NOT translate non-English words to English. Keep non-English words in their native language.
+3. NATIVE SCRIPT: Write all non-English words in their respective native script (e.g., Spanish words in Spanish/Latin script, Chinese in Chinese characters, Hindi in Devanagari script).
+4. KEEP ENGLISH IN ENGLISH SCRIPT: Keep all English words and phrases in English (Latin script). Do NOT translate English words to the target language.
+5. MIXED LANGUAGE HANDLING: For code-mixed text, keep each word/phrase in its native script.
+6. REMOVE FILLER WORDS: Remove filler words (like 'um', 'uh', 'like', 'ah'), correct backtracking, and format into clean, readable text.
+7. NO META-TEXT: Do not add any conversational responses, explanations, note, prefix, or suffix. Return ONLY the finalized refined text."
     };
 
     let lang_instruction = if language_name == "English" {

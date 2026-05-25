@@ -12,6 +12,7 @@ pub struct AudioRecorder {
     samples: Arc<Mutex<Vec<f32>>>,
     sample_rate: u32,
     channels: u16,
+    pub noise_gate_enabled: Arc<std::sync::atomic::AtomicBool>,
 }
 
 impl AudioRecorder {
@@ -21,10 +22,14 @@ impl AudioRecorder {
             samples: Arc::new(Mutex::new(Vec::new())),
             sample_rate: 0,
             channels: 0,
+            noise_gate_enabled: Arc::new(std::sync::atomic::AtomicBool::new(false)),
         }
     }
 
     pub fn start_recording(&mut self, app_handle: AppHandle, device_name: Option<&str>) -> Result<(), String> {
+        let api_config = crate::config::AppConfig::load(&app_handle);
+        self.noise_gate_enabled.store(api_config.noise_gate, std::sync::atomic::Ordering::SeqCst);
+
         if self.stream.is_some() {
             return Err("An audio stream is already active".to_string());
         }
@@ -127,7 +132,9 @@ impl AudioRecorder {
         self.stream = Some(SendStream(stream));
 
         let app_handle_clone = app_handle.clone();
+        let noise_gate_enabled = self.noise_gate_enabled.clone();
         std::thread::spawn(move || {
+            let mut hold_counter = 0;
             loop {
                 match rx.recv_timeout(std::time::Duration::from_millis(100)) {
                     Ok(first_val) => {
@@ -137,11 +144,29 @@ impl AudioRecorder {
                                 max_val = val;
                             }
                         }
+                        
+                        let use_noise_gate = noise_gate_enabled.load(std::sync::atomic::Ordering::SeqCst);
+                        if use_noise_gate {
+                            if max_val >= 0.08 {
+                                hold_counter = 2; // 200ms hold time
+                            } else if hold_counter > 0 {
+                                hold_counter -= 1;
+                            } else {
+                                max_val = 0.0;
+                            }
+                        }
+
                         let level = (max_val * 100.0) as u32;
                         let level = level.min(100);
                         let _ = app_handle_clone.emit("recording-mic-level", level);
                     }
                     Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                        let use_noise_gate = noise_gate_enabled.load(std::sync::atomic::Ordering::SeqCst);
+                        if use_noise_gate {
+                            if hold_counter > 0 {
+                                hold_counter -= 1;
+                            }
+                        }
                         let _ = app_handle_clone.emit("recording-mic-level", 0);
                     }
                     Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
@@ -155,7 +180,7 @@ impl AudioRecorder {
         Ok(())
     }
 
-    pub fn stop_recording(&mut self, path: &str) -> Result<(), String> {
+    pub fn stop_recording(&mut self, path: &str, use_noise_gate: bool) -> Result<(), String> {
         if let Some(send_stream) = self.stream.take() {
             drop(send_stream.0);
         } else {
@@ -185,7 +210,28 @@ impl AudioRecorder {
 
         // Resample to 16kHz
         let target_sample_rate = 16000;
-        let resampled = resample(&mono_samples, self.sample_rate, target_sample_rate);
+        let mut resampled = resample(&mono_samples, self.sample_rate, target_sample_rate);
+
+        // Apply DSP Noise Gate if enabled
+        if use_noise_gate {
+            let frame_size = 320; // 20ms at 16kHz
+            let threshold = 0.08; // ~-22dB
+            let hold_frames = 10; // 200ms hold time
+            let mut hold_counter = 0;
+
+            for chunk in resampled.chunks_mut(frame_size) {
+                let peak = chunk.iter().map(|&x| x.abs()).fold(0.0f32, |m, v| m.max(v));
+                if peak >= threshold {
+                    hold_counter = hold_frames;
+                } else if hold_counter > 0 {
+                    hold_counter -= 1;
+                } else {
+                    for val in chunk.iter_mut() {
+                        *val = 0.0;
+                    }
+                }
+            }
+        }
 
         // Write to WAV file
         let spec = WavSpec {
@@ -224,6 +270,9 @@ impl AudioRecorder {
     }
 
     pub fn start_mic_test(&mut self, app_handle: AppHandle, device_name: Option<&str>) -> Result<(), String> {
+        let api_config = crate::config::AppConfig::load(&app_handle);
+        self.noise_gate_enabled.store(api_config.noise_gate, std::sync::atomic::Ordering::SeqCst);
+
         if self.stream.is_some() {
             return Err("An audio stream is already active".to_string());
         }
@@ -304,7 +353,9 @@ impl AudioRecorder {
         self.stream = Some(SendStream(stream));
 
         let app_handle_clone = app_handle.clone();
+        let noise_gate_enabled = self.noise_gate_enabled.clone();
         std::thread::spawn(move || {
+            let mut hold_counter = 0;
             loop {
                 match rx.recv_timeout(std::time::Duration::from_millis(100)) {
                     Ok(first_val) => {
@@ -314,11 +365,29 @@ impl AudioRecorder {
                                 max_val = val;
                             }
                         }
+                        
+                        let use_noise_gate = noise_gate_enabled.load(std::sync::atomic::Ordering::SeqCst);
+                        if use_noise_gate {
+                            if max_val >= 0.08 {
+                                hold_counter = 2; // 200ms hold time
+                            } else if hold_counter > 0 {
+                                hold_counter -= 1;
+                            } else {
+                                max_val = 0.0;
+                            }
+                        }
+
                         let level = (max_val * 100.0) as u32;
                         let level = level.min(100);
                         let _ = app_handle_clone.emit("mic-test-level", level);
                     }
                     Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                        let use_noise_gate = noise_gate_enabled.load(std::sync::atomic::Ordering::SeqCst);
+                        if use_noise_gate {
+                            if hold_counter > 0 {
+                                hold_counter -= 1;
+                            }
+                        }
                         let _ = app_handle_clone.emit("mic-test-level", 0);
                     }
                     Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {

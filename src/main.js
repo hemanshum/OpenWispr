@@ -19,6 +19,7 @@ const subContentModels = document.getElementById("sub-content-models");
 const selectMic = document.getElementById("mic-select");
 const btnTestMic = document.getElementById("btn-test-mic");
 const micTestBar = document.getElementById("mic-test-bar");
+const checkboxNoiseGate = document.getElementById("noise-gate-checkbox");
 
 const btnRecord = document.getElementById("btn-record");
 const statusBadge = document.getElementById("status-badge");
@@ -747,6 +748,10 @@ selectTranscriptionLanguage.addEventListener("change", async () => {
   await autoSaveConfig();
 });
 
+checkboxNoiseGate.addEventListener("change", async () => {
+  await autoSaveConfig();
+});
+
 // Auto Save Settings
 async function autoSaveConfig() {
   const config = {
@@ -757,6 +762,7 @@ async function autoSaveConfig() {
     ollama_url: inputOllamaUrl.value.trim(),
     ollama_model: inputOllamaModel.value.trim(),
     audio_device: selectMic.value,
+    noise_gate: checkboxNoiseGate.checked,
     transcription_provider: selectTranscriptionProvider.value,
     openai_api_key: inputOpenAiApiKey.value.trim(),
     openai_model: inputOpenAiModel.value.trim(),
@@ -918,6 +924,7 @@ async function initConfig() {
 
     // Load available audio devices and highlight saved device
     await loadAudioDevices(config.audio_device);
+    checkboxNoiseGate.checked = config.noise_gate || false;
   } catch (err) {
     showToast("Error loading saved configurations", true);
   }

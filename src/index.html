@@ -179,6 +179,19 @@
                 </select>
               </div>
 
+              <div class="form-group" style="margin-top: 8px;">
+                <div class="switch-row" style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); padding: 12px 16px; border-radius: 12px; margin-top: 4px;">
+                  <div class="switch-info" style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
+                    <span class="form-label" style="font-size: 0.95rem;">Noise Gate</span>
+                    <span style="font-size: 0.8rem; color: #94a3b8;">Silences quiet background static/hiss when you are not speaking.</span>
+                  </div>
+                  <label class="switch-toggle" style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; cursor: pointer;">
+                    <input type="checkbox" id="noise-gate-checkbox" style="opacity: 0; width: 0; height: 0;" />
+                    <span class="switch-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.08); transition: .3s; border-radius: 24px;"></span>
+                  </label>
+                </div>
+              </div>
+
               <div class="form-group mic-test-container">
                 <label class="form-label">Live Microphone Test</label>
                 <div class="mic-test-row">

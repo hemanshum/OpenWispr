@@ -40,6 +40,8 @@ pub struct AppConfig {
     pub custom_api_key: String,
     #[serde(default = "default_custom_api_model")]
     pub custom_api_model: String,
+    #[serde(default = "default_noise_gate")]
+    pub noise_gate: bool,
 }
 
 fn default_model() -> String {
@@ -106,6 +108,10 @@ fn default_custom_api_model() -> String {
     "".to_string()
 }
 
+fn default_noise_gate() -> bool {
+    false
+}
+
 impl AppConfig {
     pub fn default() -> Self {
         Self {
@@ -127,6 +133,7 @@ impl AppConfig {
             custom_api_url: "".to_string(),
             custom_api_key: "".to_string(),
             custom_api_model: "".to_string(),
+            noise_gate: false,
         }
     }
 

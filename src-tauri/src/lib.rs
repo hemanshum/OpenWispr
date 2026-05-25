@@ -39,7 +39,10 @@ fn load_config(app_handle: AppHandle) -> AppConfig {
 }
 
 #[tauri::command]
-fn save_config(config: AppConfig, app_handle: AppHandle) -> Result<(), String> {
+fn save_config(config: AppConfig, app_handle: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+    if let Ok(recorder) = state.recorder.lock() {
+        recorder.noise_gate_enabled.store(config.noise_gate, std::sync::atomic::Ordering::SeqCst);
+    }
     config.save(&app_handle)
 }
 
@@ -153,14 +156,16 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
 
     let mut recorder = state.recorder.lock().map_err(|e| format!("Lock error: {}", e))?;
     
+    let api_config = AppConfig::load(app_handle);
+    let use_noise_gate = api_config.noise_gate;
+
     let temp_dir = std::env::temp_dir();
     let temp_file_path = temp_dir.join("murmur_recording.wav");
     let temp_file_str = temp_file_path.to_string_lossy().to_string();
 
-    recorder.stop_recording(&temp_file_str)?;
+    recorder.stop_recording(&temp_file_str, use_noise_gate)?;
 
     let app_handle_clone = app_handle.clone();
-    let api_config = AppConfig::load(app_handle);
 
     tauri::async_runtime::spawn(async move {
         let app_state = app_handle_clone.state::<AppState>();
@@ -565,5 +570,13 @@ fn greet(name: &str) -> String {
 
 #[tauri::command]
 fn set_window_focusable(window: tauri::Window, focusable: bool) -> Result<(), String> {
-    window.set_focusable(focusable).map_err(|e| e.to_string())
+    window.set_focusable(focusable).map_err(|e| e.to_string())?;
+    if focusable {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_always_on_top(true);
+        let _ = window.set_always_on_top(false);
+        let _ = window.set_focus();
+    }
+    Ok(())
 }
