@@ -1,8 +1,13 @@
 use base64::{engine::general_purpose, Engine as _};
+use once_cell::sync::Lazy;
 use reqwest::Client;
 use serde_json::json;
 use std::fs;
 use tauri::{AppHandle, Manager, Emitter};
+
+/// Persistent HTTP client singleton — reuses TCP connections and TLS sessions
+/// across requests via HTTP keep-alive, avoiding handshake overhead.
+static HTTP_CLIENT: Lazy<Client> = Lazy::new(|| Client::new());
 
 fn get_language_name(code: &str) -> &str {
     match code {
@@ -28,7 +33,7 @@ pub async fn transcribe_and_clean_gemini(
     model: &str,
     language: &str,
 ) -> Result<String, String> {
-    let client = Client::new();
+    let client = &*HTTP_CLIENT;
 
     // Read WAV bytes and base64 encode
     let file_bytes = fs::read(wav_path)
@@ -160,7 +165,7 @@ pub async fn refine_with_ollama(
     raw_text: &str,
     language: &str,
 ) -> Result<String, String> {
-    let client = Client::new();
+    let client = &*HTTP_CLIENT;
     let url = format!("{}/api/generate", ollama_url.trim_end_matches('/'));
 
     let language_name = get_language_name(language);
@@ -270,7 +275,7 @@ pub async fn transcribe_openai(
     model: &str,
     language: &str,
 ) -> Result<String, String> {
-    let client = Client::new();
+    let client = &*HTTP_CLIENT;
     let url = "https://api.openai.com/v1/audio/transcriptions";
 
     let file_bytes = fs::read(wav_path)
@@ -324,6 +329,69 @@ pub async fn transcribe_openai(
     Ok(transcribed_text.trim().to_string())
 }
 
+pub async fn transcribe_lm_studio(
+    wav_path: &str,
+    base_url: &str,
+    language: &str,
+) -> Result<String, String> {
+    let client = &*HTTP_CLIENT;
+
+    // Build the transcriptions endpoint from the base URL
+    let mut endpoint = base_url.trim().trim_end_matches('/').to_string();
+    if !endpoint.ends_with("/audio/transcriptions") {
+        if endpoint.ends_with("/v1") {
+            endpoint.push_str("/audio/transcriptions");
+        } else {
+            endpoint.push_str("/v1/audio/transcriptions");
+        }
+    }
+
+    let file_bytes = fs::read(wav_path)
+        .map_err(|e| format!("Failed to read recorded audio file: {}", e))?;
+
+    let part = reqwest::multipart::Part::bytes(file_bytes)
+        .file_name("audio.wav")
+        .mime_str("audio/wav")
+        .map_err(|e| format!("Failed to prepare audio multipart: {}", e))?;
+
+    let mut form = reqwest::multipart::Form::new()
+        .part("file", part)
+        .text("model", "whisper-1".to_string());
+
+    if language != "auto" {
+        form = form.text("language", language.to_string());
+    }
+
+    let response = client
+        .post(&endpoint)
+        .multipart(form)
+        .send()
+        .await
+        .map_err(|e| format!("LM Studio transcription request failed: {}", e))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let err_text = response.text().await.unwrap_or_default();
+        return Err(format!("LM Studio API returned error status {}: {}", status, err_text));
+    }
+
+    let json_resp: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse LM Studio response: {}", e))?;
+
+    let transcribed_text = json_resp["text"]
+        .as_str()
+        .ok_or_else(|| {
+            format!(
+                "Unexpected LM Studio response structure. Response: {:?}",
+                json_resp
+            )
+        })?;
+
+    Ok(transcribed_text.trim().to_string())
+}
+
 pub async fn refine_with_gemini(
     api_key: &str,
     model: &str,
@@ -331,7 +399,7 @@ pub async fn refine_with_gemini(
     raw_text: &str,
     language: &str,
 ) -> Result<String, String> {
-    let client = Client::new();
+    let client = &*HTTP_CLIENT;
     let url = format!(
         "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
         model, api_key
@@ -527,7 +595,7 @@ pub async fn refine_with_openai_compatible(
     raw_text: &str,
     language: &str,
 ) -> Result<String, String> {
-    let client = Client::new();
+    let client = &*HTTP_CLIENT;
     
     // Normalize endpoint URL
     let mut endpoint = api_url.trim().to_string();

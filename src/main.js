@@ -80,6 +80,12 @@ const inputCustomApiKey = document.getElementById("custom-api-key");
 const btnToggleCustomApiKey = document.getElementById("btn-toggle-custom-api-key");
 const inputCustomApiModel = document.getElementById("custom-api-model");
 
+const groupLmStudio = document.getElementById("lm-studio-settings");
+const inputLmStudioUrl = document.getElementById("lm-studio-url");
+const inputLmStudioModel = document.getElementById("lm-studio-model");
+const groupLmStudioTranscription = document.getElementById("lm-studio-transcription-settings");
+const inputLmStudioTranscriptionUrl = document.getElementById("lm-studio-transcription-url");
+
 const toastAlert = document.getElementById("toast-alert");
 const toastText = document.getElementById("toast-text");
 
@@ -220,6 +226,14 @@ inputGeminiRefineApiKey.addEventListener("input", () => {
   inputApiKey.value = inputGeminiRefineApiKey.value;
 });
 
+// Sync LM Studio URL inputs in real time
+inputLmStudioUrl.addEventListener("input", () => {
+  inputLmStudioTranscriptionUrl.value = inputLmStudioUrl.value;
+});
+inputLmStudioTranscriptionUrl.addEventListener("input", () => {
+  inputLmStudioUrl.value = inputLmStudioTranscriptionUrl.value;
+});
+
 let isGeminiRefinePasswordVisible = false;
 btnToggleGeminiRefineKey.addEventListener("click", () => {
   isGeminiRefinePasswordVisible = !isGeminiRefinePasswordVisible;
@@ -293,6 +307,38 @@ function updatePerformanceAdvisor() {
     badge.textContent = "Very Slow (~20-40s+)";
     desc.innerHTML = `Fully offline execution (Local ASR + Local Ollama) is secure and private but extremely resource-intensive on CPU. Expect longer processing times.`;
   }
+  // 7. LM Studio transcription + Cloud refinement or none
+  else if (transProvider === "lm_studio" && refProvider === "none") {
+    card.classList.add("speed-moderate");
+    icon.textContent = "📊";
+    badge.textContent = "Moderate (~2.0-4.0s)";
+    desc.innerHTML = `Using <strong>LM Studio (Local Whisper)</strong> for transcription with refinement disabled. Runs locally via your LM Studio server.`;
+  }
+  else if (transProvider === "lm_studio" && (refProvider === "gemini" || refProvider === "openai" || refProvider === "openrouter" || refProvider === "custom")) {
+    card.classList.add("speed-moderate");
+    icon.textContent = "📊";
+    badge.textContent = "Moderate (~3.5-6.0s)";
+    desc.innerHTML = `Local <strong>LM Studio</strong> transcription combined with cloud refinement. A hybrid setup for local audio privacy with cloud cleanup quality.`;
+  }
+  else if (transProvider === "lm_studio" && (refProvider === "ollama" || refProvider === "lm_studio")) {
+    card.classList.add("speed-slow");
+    icon.textContent = "🐢";
+    badge.textContent = "Slow (~10-30s+)";
+    desc.innerHTML = `Fully local execution with <strong>LM Studio</strong> for both transcription and refinement. Private but may be slow depending on hardware.`;
+  }
+  // 8. Any transcription + LM Studio refinement (not already covered)
+  else if ((transProvider === "gemini" || transProvider === "openai") && refProvider === "lm_studio") {
+    card.classList.add("speed-slow");
+    icon.textContent = "🐢";
+    badge.textContent = "Slow (~10-25s)";
+    desc.innerHTML = `Using a cloud transcription engine but refining with a local <strong>LM Studio LLM</strong> is slower due to local generation latency. Consider switching Refinement Provider to Gemini Cloud or None for a significant speedup.`;
+  }
+  else if ((transProvider === "local_parakeet" || transProvider === "local_whisper") && refProvider === "lm_studio") {
+    card.classList.add("speed-slow");
+    icon.textContent = "🐢";
+    badge.textContent = "Very Slow (~20-40s+)";
+    desc.innerHTML = `Fully offline execution (Local ASR + Local LM Studio) is secure and private but extremely resource-intensive. Expect longer processing times.`;
+  }
 }
 
 // Update visibility of setting blocks based on selected providers
@@ -304,12 +350,19 @@ function updateSettingsVisibility() {
   if (transProvider === "openai") {
     groupOpenAi.style.display = "block";
     groupLocalWhisper.style.display = "none";
+    groupLmStudioTranscription.style.display = "none";
   } else if (transProvider === "local_whisper") {
     groupOpenAi.style.display = "none";
     groupLocalWhisper.style.display = "block";
+    groupLmStudioTranscription.style.display = "none";
+  } else if (transProvider === "lm_studio") {
+    groupOpenAi.style.display = "none";
+    groupLocalWhisper.style.display = "none";
+    groupLmStudioTranscription.style.display = "block";
   } else {
     groupOpenAi.style.display = "none";
     groupLocalWhisper.style.display = "none";
+    groupLmStudioTranscription.style.display = "none";
   }
 
   // 2. Gemini API Key visibility (Transcription section)
@@ -328,6 +381,7 @@ function updateSettingsVisibility() {
     groupOpenAiRefine.style.display = "none";
     groupOpenRouter.style.display = "none";
     groupCustomApi.style.display = "none";
+    groupLmStudio.style.display = "none";
     groupRefinePrompt.style.display = "block";
   } else if (refProvider === "openai") {
     groupGemini.style.display = "none";
@@ -335,6 +389,7 @@ function updateSettingsVisibility() {
     groupOpenAiRefine.style.display = "block";
     groupOpenRouter.style.display = "none";
     groupCustomApi.style.display = "none";
+    groupLmStudio.style.display = "none";
     groupRefinePrompt.style.display = "block";
   } else if (refProvider === "openrouter") {
     groupGemini.style.display = "none";
@@ -342,6 +397,7 @@ function updateSettingsVisibility() {
     groupOpenAiRefine.style.display = "none";
     groupOpenRouter.style.display = "block";
     groupCustomApi.style.display = "none";
+    groupLmStudio.style.display = "none";
     groupRefinePrompt.style.display = "block";
   } else if (refProvider === "custom") {
     groupGemini.style.display = "none";
@@ -349,6 +405,7 @@ function updateSettingsVisibility() {
     groupOpenAiRefine.style.display = "none";
     groupOpenRouter.style.display = "none";
     groupCustomApi.style.display = "block";
+    groupLmStudio.style.display = "none";
     groupRefinePrompt.style.display = "block";
   } else if (refProvider === "ollama") {
     groupGemini.style.display = "none";
@@ -356,6 +413,15 @@ function updateSettingsVisibility() {
     groupOpenAiRefine.style.display = "none";
     groupOpenRouter.style.display = "none";
     groupCustomApi.style.display = "none";
+    groupLmStudio.style.display = "none";
+    groupRefinePrompt.style.display = "block";
+  } else if (refProvider === "lm_studio") {
+    groupGemini.style.display = "none";
+    groupOllama.style.display = "none";
+    groupOpenAiRefine.style.display = "none";
+    groupOpenRouter.style.display = "none";
+    groupCustomApi.style.display = "none";
+    groupLmStudio.style.display = "block";
     groupRefinePrompt.style.display = "block";
   } else {
     // "none"
@@ -364,6 +430,7 @@ function updateSettingsVisibility() {
     groupOpenAiRefine.style.display = "none";
     groupOpenRouter.style.display = "none";
     groupCustomApi.style.display = "none";
+    groupLmStudio.style.display = "none";
     groupRefinePrompt.style.display = "none";
   }
 
@@ -774,6 +841,8 @@ async function autoSaveConfig() {
     custom_api_url: inputCustomApiUrl.value.trim(),
     custom_api_key: inputCustomApiKey.value.trim(),
     custom_api_model: inputCustomApiModel.value.trim(),
+    lm_studio_url: inputLmStudioUrl.value.trim() || inputLmStudioTranscriptionUrl.value.trim(),
+    lm_studio_model: inputLmStudioModel.value.trim(),
   };
 
   try {
@@ -925,6 +994,10 @@ async function initConfig() {
     // Load available audio devices and highlight saved device
     await loadAudioDevices(config.audio_device);
     checkboxNoiseGate.checked = config.noise_gate || false;
+
+    inputLmStudioUrl.value = config.lm_studio_url || "http://localhost:1234";
+    inputLmStudioTranscriptionUrl.value = config.lm_studio_url || "http://localhost:1234";
+    inputLmStudioModel.value = config.lm_studio_model || "";
   } catch (err) {
     showToast("Error loading saved configurations", true);
   }

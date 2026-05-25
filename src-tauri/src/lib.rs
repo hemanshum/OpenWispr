@@ -205,6 +205,14 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
             return;
         }
 
+        let lm_studio_url = api_config.lm_studio_url.trim().to_string();
+        if (tx_provider == "lm_studio" || provider == "lm_studio") && lm_studio_url.is_empty() {
+            update_status(&app_handle_clone, &app_state, "Error: Missing LM Studio URL");
+            tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+            update_status(&app_handle_clone, &app_state, "Idle");
+            return;
+        }
+
         let prompt = api_config.prompt.to_string();
         let model = api_config.model.to_string();
         let local_whisper_model = api_config.local_whisper_model.to_string();
@@ -262,6 +270,18 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
                     &temp_file_str,
                     &openai_api_key,
                     &openai_model,
+                    &transcription_language,
+                ).await {
+                    Ok(raw_text) => {
+                        refine_text_internal(&raw_text, &api_config).await
+                    }
+                    Err(e) => Err(e),
+                }
+            }
+            "lm_studio" => {
+                match crate::api::transcribe_lm_studio(
+                    &temp_file_str,
+                    &lm_studio_url,
                     &transcription_language,
                 ).await {
                     Ok(raw_text) => {
@@ -420,6 +440,16 @@ async fn refine_text_internal(
                 &config.custom_api_url,
                 &config.custom_api_key,
                 &config.custom_api_model,
+                &config.prompt,
+                raw_text,
+                &config.transcription_language,
+            ).await
+        }
+        "lm_studio" => {
+            crate::api::refine_with_openai_compatible(
+                &config.lm_studio_url,
+                "",
+                &config.lm_studio_model,
                 &config.prompt,
                 raw_text,
                 &config.transcription_language,

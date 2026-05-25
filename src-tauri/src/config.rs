@@ -42,6 +42,10 @@ pub struct AppConfig {
     pub custom_api_model: String,
     #[serde(default = "default_noise_gate")]
     pub noise_gate: bool,
+    #[serde(default = "default_lm_studio_url")]
+    pub lm_studio_url: String,
+    #[serde(default = "default_lm_studio_model")]
+    pub lm_studio_model: String,
 }
 
 fn default_model() -> String {
@@ -112,6 +116,14 @@ fn default_noise_gate() -> bool {
     false
 }
 
+fn default_lm_studio_url() -> String {
+    "http://localhost:1234".to_string()
+}
+
+fn default_lm_studio_model() -> String {
+    "".to_string()
+}
+
 impl AppConfig {
     pub fn default() -> Self {
         Self {
@@ -134,6 +146,8 @@ impl AppConfig {
             custom_api_key: "".to_string(),
             custom_api_model: "".to_string(),
             noise_gate: false,
+            lm_studio_url: "http://localhost:1234".to_string(),
+            lm_studio_model: "".to_string(),
         }
     }
 

@@ -217,6 +217,7 @@
                   <option value="openai">OpenAI Whisper (Cloud)</option>
                   <option value="local_whisper">Local Whisper (Offline)</option>
                   <option value="local_parakeet">Nvidia Parakeet V3 (Offline)</option>
+                  <option value="lm_studio">LM Studio (Local)</option>
                 </select>
               </div>
 
@@ -296,6 +297,19 @@
                 </div>
               </div>
 
+              <!-- LM Studio Transcription Settings -->
+              <div id="lm-studio-transcription-settings" style="display: none;">
+                <div class="form-group" style="margin-top: 4px;">
+                  <label class="form-label" for="lm-studio-transcription-url">LM Studio Server URL</label>
+                  <input
+                    type="text"
+                    id="lm-studio-transcription-url"
+                    class="form-input"
+                    placeholder="http://localhost:1234"
+                  />
+                </div>
+              </div>
+
               <!-- Offline Model Manager Card -->
               <div id="offline-model-card" class="settings-card" style="display: none; margin-top: 16px;">
                 <div class="settings-card-title">Offline Model Status</div>
@@ -332,6 +346,7 @@
                   <option value="openrouter">OpenRouter (Cloud)</option>
                   <option value="custom">Custom API (OpenAI-Compatible)</option>
                   <option value="ollama">Ollama (Local Refinement)</option>
+                  <option value="lm_studio">LM Studio (Local)</option>
                   <option value="none">None (Direct Transcript)</option>
                 </select>
               </div>
@@ -472,6 +487,29 @@
                     id="ollama-model"
                     class="form-input"
                     placeholder="e.g. llama3, mistral, gemma"
+                  />
+                </div>
+              </div>
+
+              <!-- LM Studio Refinement Settings -->
+              <div id="lm-studio-settings" style="display: none;">
+                <div class="form-group" style="margin-top: 4px;">
+                  <label class="form-label" for="lm-studio-url">LM Studio Server URL</label>
+                  <input
+                    type="text"
+                    id="lm-studio-url"
+                    class="form-input"
+                    placeholder="http://localhost:1234"
+                  />
+                </div>
+
+                <div class="form-group" style="margin-top: 12px;">
+                  <label class="form-label" for="lm-studio-model">LM Studio Model Name</label>
+                  <input
+                    type="text"
+                    id="lm-studio-model"
+                    class="form-input"
+                    placeholder="e.g. llama-3, mistral, qwen"
                   />
                 </div>
               </div>

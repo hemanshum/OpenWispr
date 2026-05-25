@@ -231,6 +231,24 @@ impl AudioRecorder {
                     }
                 }
             }
+
+            // Trim leading and trailing silence (zeroed frames) to reduce payload
+            let silence_threshold = 0.001;
+            let margin = 160; // 10ms safety margin at 16kHz
+
+            let first_nonsilent = resampled.iter()
+                .position(|&s| s.abs() > silence_threshold)
+                .unwrap_or(0);
+            let last_nonsilent = resampled.iter()
+                .rposition(|&s| s.abs() > silence_threshold)
+                .unwrap_or(resampled.len().saturating_sub(1));
+
+            let trim_start = first_nonsilent.saturating_sub(margin);
+            let trim_end = (last_nonsilent + margin + 1).min(resampled.len());
+
+            if trim_start < trim_end {
+                resampled = resampled[trim_start..trim_end].to_vec();
+            }
         }
 
         // Write to WAV file
