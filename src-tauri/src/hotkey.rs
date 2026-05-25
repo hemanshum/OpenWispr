@@ -1,18 +1,29 @@
+#[cfg(target_os = "windows")]
 use std::sync::atomic::{AtomicBool, Ordering};
+#[cfg(target_os = "windows")]
 use std::sync::mpsc;
+#[cfg(target_os = "windows")]
 use std::thread;
+#[cfg(target_os = "windows")]
 use windows_sys::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
+#[cfg(target_os = "windows")]
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{VK_LCONTROL, VK_RCONTROL};
+#[cfg(target_os = "windows")]
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     CallNextHookEx, GetMessageW, PostThreadMessageW, SetWindowsHookExW, UnhookWindowsHookEx,
     HHOOK, KBDLLHOOKSTRUCT, MSG, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP, WM_QUIT,
     WM_SYSKEYDOWN, WM_SYSKEYUP,
 };
 
+#[cfg(target_os = "windows")]
 static mut HOOK_HANDLE: HHOOK = 0 as HHOOK;
+#[cfg(target_os = "windows")]
 static mut HOOK_THREAD_ID: u32 = 0;
-static mut SENDER: Option<mpsc::Sender<HotkeyEvent>> = None;
+#[cfg(target_os = "windows")]
+static mut SENDER: Option<std::sync::mpsc::Sender<HotkeyEvent>> = None;
+#[cfg(target_os = "windows")]
 static KEY_PRESSED: AtomicBool = AtomicBool::new(false);
+#[cfg(target_os = "windows")]
 static CANCELLED: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug)]
@@ -22,10 +33,12 @@ pub enum HotkeyEvent {
     Cancelled,
 }
 
+#[cfg(target_os = "windows")]
 pub struct HotkeyListener {
     _thread: thread::JoinHandle<()>,
 }
 
+#[cfg(target_os = "windows")]
 impl HotkeyListener {
     pub fn start<F>(event_handler: F) -> Self
     where
@@ -75,6 +88,7 @@ impl HotkeyListener {
     }
 }
 
+#[cfg(target_os = "windows")]
 impl Drop for HotkeyListener {
     fn drop(&mut self) {
         unsafe {
@@ -85,6 +99,7 @@ impl Drop for HotkeyListener {
     }
 }
 
+#[cfg(target_os = "windows")]
 unsafe extern "system" fn low_level_keyboard_proc(
     n_code: i32,
     w_param: WPARAM,
@@ -137,4 +152,17 @@ unsafe extern "system" fn low_level_keyboard_proc(
     }
 
     CallNextHookEx(HOOK_HANDLE, n_code, w_param, l_param)
+}
+
+#[cfg(not(target_os = "windows"))]
+pub struct HotkeyListener;
+
+#[cfg(not(target_os = "windows"))]
+impl HotkeyListener {
+    pub fn start<F>(_event_handler: F) -> Self
+    where
+        F: Fn(HotkeyEvent) + Send + 'static,
+    {
+        Self
+    }
 }

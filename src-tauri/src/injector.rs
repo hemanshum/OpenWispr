@@ -1,13 +1,19 @@
+#[cfg(target_os = "windows")]
 use std::thread;
+#[cfg(target_os = "windows")]
 use std::time::Duration;
+#[cfg(target_os = "windows")]
 use std::sync::atomic::{AtomicIsize, Ordering};
 use arboard::Clipboard;
+#[cfg(target_os = "windows")]
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
     SendInput, INPUT, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, KEYEVENTF_UNICODE, VK_CONTROL, VK_V,
 };
 
+#[cfg(target_os = "windows")]
 static LAST_ACTIVE_HWND: AtomicIsize = AtomicIsize::new(0);
 
+#[cfg(target_os = "windows")]
 pub fn start_focus_tracker() {
     thread::spawn(|| {
         unsafe {
@@ -27,6 +33,7 @@ pub fn start_focus_tracker() {
     });
 }
 
+#[cfg(target_os = "windows")]
 fn inject_via_unicode(text: &str) -> Result<(), String> {
     let utf16_chars: Vec<u16> = text.encode_utf16().collect();
     if utf16_chars.is_empty() {
@@ -77,6 +84,7 @@ fn inject_via_unicode(text: &str) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(target_os = "windows")]
 fn inject_via_clipboard(text: &str) -> Result<(), String> {
     let mut clipboard = Clipboard::new().map_err(|e| format!("Failed to open clipboard: {}", e))?;
 
@@ -151,6 +159,7 @@ fn inject_via_clipboard(text: &str) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(target_os = "windows")]
 pub fn inject_text(text: &str) -> Result<(), String> {
     // Restore focus to the last active window before injecting
     let target_hwnd = LAST_ACTIVE_HWND.load(Ordering::SeqCst);
@@ -170,4 +179,16 @@ pub fn inject_text(text: &str) -> Result<(), String> {
             inject_via_unicode(text)
         }
     }
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn start_focus_tracker() {}
+
+#[cfg(not(target_os = "windows"))]
+pub fn inject_text(text: &str) -> Result<(), String> {
+    let mut clipboard = Clipboard::new().map_err(|e| format!("Failed to open clipboard: {}", e))?;
+    clipboard
+        .set_text(text.to_string())
+        .map_err(|e| format!("Failed to set clipboard text: {}", e))?;
+    Ok(())
 }

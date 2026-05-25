@@ -32,7 +32,6 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-size: 'large'
           node-version: 'lts/*'
           cache: 'npm'
 
