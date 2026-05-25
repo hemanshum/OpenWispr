@@ -13,12 +13,18 @@ With a beautiful dark-mode glassmorphic interface, real-time waveform visualizer
   - **Google Gemini (Cloud)**: Blazing-fast transcription and refinement in a single optimized request (~1.5s).
   - **OpenAI Whisper (Cloud)**: Highly optimized Whisper API cloud transcription (~1.5s).
   - **Local Whisper (Offline)**: Run fully offline using local model weights (e.g., `base`, `tiny`, `small`) optimized for CPU execution.
+  - **LM Studio (Local)**: Hook into a local LM Studio server running a Whisper-compatible endpoint (default `http://localhost:1234`) for high-fidelity offline transcription.
 - **🧠 Multi-Provider AI Refinement**: Refine and rewrite your voice drafts using:
   - **Google Gemini**
   - **OpenAI (GPT)**
   - **OpenRouter**
   - **Ollama** (Local models like Llama 3)
+  - **LM Studio** (Local chat/completions compatible models)
   - **Custom API** (Compatible OpenAI or custom endpoints)
+- **⚡ Performance & Speed Optimizations**:
+  - **Persistent Connection Reuse**: Utilizes a shared static HTTP client connection pool to bypass TLS handshakes on every call, saving ~100-300ms per request.
+  - **Silence Trimming**: Intelligently crops leading/trailing silence from recordings prior to upload, shrinking WAV payloads by up to 40% for faster uploads.
+  - **Upgraded Noise Gate**: Optimized noise gate (threshold at 0.08) applied dynamically, with full support integrated into the settings tab's live audio level indicator.
 - **⚡ Preset Badge Shortcuts**: Apply specific AI cleanup styles instantly using presets on the dashboard or settings page:
   - `Default` (Clean, remove filler words)
   - `Professional Email` (Draft formal emails)
@@ -67,8 +73,8 @@ Before setting up Murmur, ensure you have the following installed on your machin
 
 ### Releases & Downloads
 
-You can download the latest pre-built installer for version **0.1.1** here:
-- **[Download v0.1.1 Release](https://github.com/hemanshum/Murmur/releases/tag/0.1.1)**
+You can download the latest pre-built installer for version **0.2.0** here:
+- **[Download v0.2.0 Release](https://github.com/hemanshum/Murmur/releases/tag/v0.2.0)**
 
 ---
 
