@@ -27,6 +27,7 @@ static KEY_PRESSED: AtomicBool = AtomicBool::new(false);
 static CANCELLED: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum HotkeyEvent {
     Pressed,
     Released,

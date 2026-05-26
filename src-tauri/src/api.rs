@@ -757,7 +757,7 @@ pub async fn transcribe_local_sherpa(
         #[cfg(windows)]
         install_cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
         let install_status = install_cmd
-            .args(["-m", "pip", "install", "--user", "numpy", "sherpa-onnx"])
+            .args(["-m", "pip", "install", "--user", "numpy", "sherpa-onnx", "--break-system-packages"])
             .output()
             .await
             .map_err(|e| format!("Failed to run pip install: {}", e))?;
