@@ -13,6 +13,8 @@ pub struct AudioRecorder {
     sample_rate: u32,
     channels: u16,
     pub noise_gate_enabled: Arc<std::sync::atomic::AtomicBool>,
+    is_paused: Arc<std::sync::atomic::AtomicBool>,
+    paused_samples: Arc<Mutex<Vec<f32>>>,
 }
 
 impl AudioRecorder {
@@ -23,6 +25,8 @@ impl AudioRecorder {
             sample_rate: 0,
             channels: 0,
             noise_gate_enabled: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            is_paused: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            paused_samples: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
@@ -69,9 +73,15 @@ impl AudioRecorder {
         self.channels = channels;
 
         let samples = self.samples.clone();
+        let paused_samples = self.paused_samples.clone();
+        let is_paused = self.is_paused.clone();
         if let Ok(mut s) = samples.lock() {
             s.clear();
         }
+        if let Ok(mut ps) = paused_samples.lock() {
+            ps.clear();
+        }
+        is_paused.store(false, std::sync::atomic::Ordering::SeqCst);
 
         let (tx, rx) = std::sync::mpsc::channel::<f32>();
         let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
@@ -81,8 +91,15 @@ impl AudioRecorder {
             cpal::SampleFormat::F32 => device.build_input_stream(
                 &config.into(),
                 move |data: &[f32], _: &cpal::InputCallbackInfo| {
-                    if let Ok(mut s) = samples.lock() {
-                        s.extend_from_slice(data);
+                    let paused = is_paused.load(std::sync::atomic::Ordering::SeqCst);
+                    if paused {
+                        if let Ok(mut ps) = paused_samples.lock() {
+                            ps.extend_from_slice(data);
+                        }
+                    } else {
+                        if let Ok(mut s) = samples.lock() {
+                            s.extend_from_slice(data);
+                        }
                     }
                     if !data.is_empty() {
                         let peak = data.iter().map(|&x| x.abs()).fold(0.0f32, f32::max);
@@ -95,8 +112,15 @@ impl AudioRecorder {
             cpal::SampleFormat::I16 => device.build_input_stream(
                 &config.into(),
                 move |data: &[i16], _: &cpal::InputCallbackInfo| {
-                    if let Ok(mut s) = samples.lock() {
-                        s.extend(data.iter().map(|&x| x as f32 / i16::MAX as f32));
+                    let paused = is_paused.load(std::sync::atomic::Ordering::SeqCst);
+                    if paused {
+                        if let Ok(mut ps) = paused_samples.lock() {
+                            ps.extend(data.iter().map(|&x| x as f32 / i16::MAX as f32));
+                        }
+                    } else {
+                        if let Ok(mut s) = samples.lock() {
+                            s.extend(data.iter().map(|&x| x as f32 / i16::MAX as f32));
+                        }
                     }
                     if !data.is_empty() {
                         let peak = data.iter().map(|&x| (x as f32 / i16::MAX as f32).abs()).fold(0.0f32, f32::max);
@@ -109,10 +133,19 @@ impl AudioRecorder {
             cpal::SampleFormat::U16 => device.build_input_stream(
                 &config.into(),
                 move |data: &[u16], _: &cpal::InputCallbackInfo| {
-                    if let Ok(mut s) = samples.lock() {
-                        s.extend(data.iter().map(|&x| {
-                            (x as f32 - u16::MAX as f32 / 2.0) / (u16::MAX as f32 / 2.0)
-                        }));
+                    let paused = is_paused.load(std::sync::atomic::Ordering::SeqCst);
+                    if paused {
+                        if let Ok(mut ps) = paused_samples.lock() {
+                            ps.extend(data.iter().map(|&x| {
+                                (x as f32 - u16::MAX as f32 / 2.0) / (u16::MAX as f32 / 2.0)
+                            }));
+                        }
+                    } else {
+                        if let Ok(mut s) = samples.lock() {
+                            s.extend(data.iter().map(|&x| {
+                                (x as f32 - u16::MAX as f32 / 2.0) / (u16::MAX as f32 / 2.0)
+                            }));
+                        }
                     }
                     if !data.is_empty() {
                         let peak = data.iter().map(|&x| {
@@ -284,7 +317,39 @@ impl AudioRecorder {
         if let Ok(mut s) = self.samples.lock() {
             s.clear();
         }
+        if let Ok(mut ps) = self.paused_samples.lock() {
+            ps.clear();
+        }
+        self.is_paused.store(false, std::sync::atomic::Ordering::SeqCst);
         Ok(())
+    }
+
+    pub fn pause_recording(&mut self) -> Result<(), String> {
+        if self.stream.is_none() {
+            return Err("Not recording".to_string());
+        }
+        self.is_paused.store(true, std::sync::atomic::Ordering::SeqCst);
+        Ok(())
+    }
+
+    pub fn resume_recording(&mut self) -> Result<(), String> {
+        if self.stream.is_none() {
+            return Err("Not recording".to_string());
+        }
+        // Move paused samples back to main samples
+        if let Ok(mut ps) = self.paused_samples.lock() {
+            if !ps.is_empty() {
+                if let Ok(mut s) = self.samples.lock() {
+                    s.extend(ps.drain(..));
+                }
+            }
+        }
+        self.is_paused.store(false, std::sync::atomic::Ordering::SeqCst);
+        Ok(())
+    }
+
+    pub fn is_paused(&self) -> bool {
+        self.is_paused.load(std::sync::atomic::Ordering::SeqCst)
     }
 
     pub fn start_mic_test(&mut self, app_handle: AppHandle, device_name: Option<&str>) -> Result<(), String> {

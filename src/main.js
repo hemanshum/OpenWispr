@@ -4,9 +4,11 @@ const { listen } = window.__TAURI__.event;
 // UI Elements
 const tabDash = document.getElementById("tab-dash");
 const tabHistory = document.getElementById("tab-history");
+const tabNotes = document.getElementById("tab-notes");
 const tabSettings = document.getElementById("tab-settings");
 const contentDash = document.getElementById("content-dash");
 const contentHistory = document.getElementById("content-history");
+const contentNotes = document.getElementById("content-notes");
 const contentSettings = document.getElementById("content-settings");
 
 const subTabAudio = document.getElementById("sub-tab-audio");
@@ -96,8 +98,41 @@ const btnCopyLast = document.getElementById("btn-copy-last");
 const canvas = document.getElementById("canvas-visualizer");
 const ctx = canvas.getContext("2d");
 
+// Notes Tab Elements
+const btnNewNote = document.getElementById("btn-new-note");
+const noteTitleModal = document.getElementById("note-title-modal");
+const noteRecordingModal = document.getElementById("note-recording-modal");
+const newNoteTitleInput = document.getElementById("new-note-title");
+const btnCancelTitle = document.getElementById("btn-cancel-title");
+const btnStartRecording = document.getElementById("btn-start-recording");
+const btnStopNoteRecording = document.getElementById("btn-stop-note-recording");
+const btnPauseRecording = document.getElementById("btn-pause-recording");
+const btnResumeRecording = document.getElementById("btn-resume-recording");
+const recordingTitle = document.getElementById("recording-title");
+const recordingTimer = document.getElementById("recording-timer");
+const noteRecordingCanvas = document.getElementById("note-recording-canvas");
+const noteCtx = noteRecordingCanvas ? noteRecordingCanvas.getContext("2d") : null;
+const noteDetailView = document.getElementById("note-detail-view");
+const notesListContainer = document.getElementById("notes-list-container");
+const btnBackToNotes = document.getElementById("btn-back-to-notes");
+const btnDeleteNote = document.getElementById("btn-delete-note");
+const noteTitleInput = document.getElementById("note-title-input");
+const noteAudioElement = document.getElementById("note-audio-element");
+const btnCopyTranscription = document.getElementById("btn-copy-transcription");
+const noteTranscription = document.getElementById("note-transcription");
+const btnSaveNote = document.getElementById("btn-save-note");
+const notesList = document.getElementById("notes-list");
+const notesEmpty = document.getElementById("notes-empty");
+const notesCount = document.getElementById("notes-count");
+
 // App State
 let currentStatus = "Idle";
+let currentNoteId = null;
+let isRecordingNote = false;
+let isPaused = false;
+let recordingStartTime = null;
+let recordingTimerInterval = null;
+let pendingNoteTitle = "";
 let isPasswordVisible = false;
 let isOpenAiPasswordVisible = false;
 let phase = 0;
@@ -111,9 +146,11 @@ tabDash.addEventListener("click", () => {
   stopMicTesting(); // Always stop mic test when switching back to dashboard
   tabDash.classList.add("active");
   tabHistory.classList.remove("active");
+  tabNotes.classList.remove("active");
   tabSettings.classList.remove("active");
   contentDash.classList.add("active");
   contentHistory.classList.remove("active");
+  contentNotes.classList.remove("active");
   contentSettings.classList.remove("active");
   invoke("set_window_focusable", { focusable: false }).catch((err) => console.error(err));
 });
@@ -122,9 +159,11 @@ tabHistory.addEventListener("click", () => {
   stopMicTesting();
   tabHistory.classList.add("active");
   tabDash.classList.remove("active");
+  tabNotes.classList.remove("active");
   tabSettings.classList.remove("active");
   contentHistory.classList.add("active");
   contentDash.classList.remove("active");
+  contentNotes.classList.remove("active");
   contentSettings.classList.remove("active");
   invoke("set_window_focusable", { focusable: true }).catch((err) => console.error(err));
   loadHistory();
@@ -134,10 +173,27 @@ tabSettings.addEventListener("click", () => {
   tabSettings.classList.add("active");
   tabDash.classList.remove("active");
   tabHistory.classList.remove("active");
+  tabNotes.classList.remove("active");
   contentSettings.classList.add("active");
   contentDash.classList.remove("active");
   contentHistory.classList.remove("active");
+  contentNotes.classList.remove("active");
   invoke("set_window_focusable", { focusable: true }).catch((err) => console.error(err));
+});
+
+// Notes Tab Switcher
+tabNotes.addEventListener("click", () => {
+  stopMicTesting();
+  tabNotes.classList.add("active");
+  tabDash.classList.remove("active");
+  tabHistory.classList.remove("active");
+  tabSettings.classList.remove("active");
+  contentNotes.classList.add("active");
+  contentDash.classList.remove("active");
+  contentHistory.classList.remove("active");
+  contentSettings.classList.remove("active");
+  invoke("set_window_focusable", { focusable: true }).catch((err) => console.error(err));
+  loadNotes();
 });
 
 // Sub-Tab Switcher inside Settings
@@ -1334,6 +1390,393 @@ function formatTimestamp(tsString) {
   } catch (e) {
     return tsString;
   }
+}
+
+// ===========================================
+// VOICE NOTES FUNCTIONS
+// ===========================================
+
+// Load all voice notes
+async function loadNotes() {
+  try {
+    const notes = await invoke("get_voice_notes");
+    renderNotesList(notes);
+  } catch (err) {
+    console.error("Failed to load notes:", err);
+    showToast(`Failed to load notes: ${err}`, true);
+  }
+}
+
+// Render notes list
+function renderNotesList(notes) {
+  if (!notesList || !notesCount || !notesEmpty) return;
+
+  notesList.innerHTML = "";
+  notesCount.textContent = `${notes.length} ${notes.length === 1 ? 'note' : 'notes'}`;
+
+  if (notes.length === 0) {
+    notesEmpty.style.display = "flex";
+    notesList.style.display = "none";
+    return;
+  }
+
+  notesEmpty.style.display = "none";
+  notesList.style.display = "flex";
+
+  notes.forEach((note) => {
+    const card = document.createElement("div");
+    card.className = "note-card";
+    card.addEventListener("click", () => openNoteDetail(note.id));
+
+    const title = document.createElement("div");
+    title.className = "note-card-title";
+    title.textContent = note.title || "Untitled Note";
+    card.appendChild(title);
+
+    const preview = document.createElement("div");
+    preview.className = "note-card-preview";
+    preview.textContent = note.transcription || "No transcription";
+    card.appendChild(preview);
+
+    const meta = document.createElement("div");
+    meta.className = "note-card-meta";
+
+    const date = document.createElement("span");
+    date.className = "note-card-date";
+    date.textContent = formatTimestamp(note.created_at);
+    meta.appendChild(date);
+
+    const play = document.createElement("span");
+    play.className = "note-card-play";
+    play.innerHTML = `
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+        <path d="M8 5v14l11-7z"/>
+      </svg>
+      Play
+    `;
+    meta.appendChild(play);
+
+    card.appendChild(meta);
+    notesList.appendChild(card);
+  });
+}
+
+// Show title input modal when clicking New Note
+function showTitleModal() {
+  noteTitleModal.style.display = "flex";
+  notesListContainer.style.display = "none";
+  noteDetailView.style.display = "none";
+  newNoteTitleInput.value = "";
+  newNoteTitleInput.focus();
+}
+
+// Cancel title input and return to notes list
+function cancelTitleInput() {
+  noteTitleModal.style.display = "none";
+  notesListContainer.style.display = "block";
+  newNoteTitleInput.value = "";
+}
+
+// Start recording after title is entered
+async function startRecordingWithTitle() {
+  const title = newNoteTitleInput.value.trim();
+  if (!title) {
+    showToast("Please enter a title for the note", true);
+    return;
+  }
+
+  pendingNoteTitle = title;
+  noteTitleModal.style.display = "none";
+
+  try {
+    await invoke("start_voice_note_recording");
+    isRecordingNote = true;
+    isPaused = false;
+    noteRecordingModal.style.display = "flex";
+
+    // Update UI
+    recordingTitle.textContent = title;
+    recordingTimer.textContent = "00:00";
+    btnPauseRecording.style.display = "flex";
+    btnResumeRecording.style.display = "none";
+
+    // Start timer
+    recordingStartTime = Date.now();
+    recordingTimerInterval = setInterval(updateRecordingTimer, 1000);
+
+    // Start drawing waveform
+    if (noteRecordingCanvas && noteCtx) {
+      resizeNoteCanvas();
+      drawNoteWaveform();
+    }
+  } catch (err) {
+    console.error("Failed to start recording:", err);
+    showToast(`Failed to start recording: ${err}`, true);
+    notesListContainer.style.display = "block";
+  }
+}
+
+// Update recording timer display
+function updateRecordingTimer() {
+  if (!recordingStartTime) return;
+  const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+  const minutes = Math.floor(elapsed / 60).toString().padStart(2, "0");
+  const seconds = (elapsed % 60).toString().padStart(2, "0");
+  recordingTimer.textContent = `${minutes}:${seconds}`;
+}
+
+// Pause recording
+async function pauseRecording() {
+  if (!isRecordingNote || isPaused) return;
+
+  try {
+    await invoke("pause_recording");
+    isPaused = true;
+    btnPauseRecording.style.display = "none";
+    btnResumeRecording.style.display = "flex";
+    recordingTitle.textContent = pendingNoteTitle + " (Paused)";
+    clearInterval(recordingTimerInterval);
+  } catch (err) {
+    console.error("Failed to pause recording:", err);
+    showToast(`Failed to pause: ${err}`, true);
+  }
+}
+
+// Resume recording
+async function resumeRecording() {
+  if (!isRecordingNote || !isPaused) return;
+
+  try {
+    await invoke("resume_recording");
+    isPaused = false;
+    btnPauseRecording.style.display = "flex";
+    btnResumeRecording.style.display = "none";
+    recordingTitle.textContent = pendingNoteTitle;
+    // Adjust start time to account for pause duration
+    recordingStartTime = Date.now() - parseTimerToMs(recordingTimer.textContent);
+    recordingTimerInterval = setInterval(updateRecordingTimer, 1000);
+  } catch (err) {
+    console.error("Failed to resume recording:", err);
+    showToast(`Failed to resume: ${err}`, true);
+  }
+}
+
+// Parse timer string to milliseconds
+function parseTimerToMs(timerStr) {
+  const [minutes, seconds] = timerStr.split(":").map(Number);
+  return (minutes * 60 + seconds) * 1000;
+}
+
+// Stop recording and save voice note
+async function stopNoteRecording() {
+  if (!isRecordingNote) return;
+
+  try {
+    // Show loading state
+    showToast("Processing voice note...", false);
+    clearInterval(recordingTimerInterval);
+
+    // Stop recording and create note in one call
+    const note = await invoke("stop_voice_note_recording", {
+      title: pendingNoteTitle || "Untitled Note"
+    });
+
+    isRecordingNote = false;
+    isPaused = false;
+    recordingStartTime = null;
+    pendingNoteTitle = "";
+    noteRecordingModal.style.display = "none";
+
+    // Reload notes and open the new note
+    await loadNotes();
+    openNoteDetail(note.id);
+
+    showToast("Voice note created!");
+  } catch (err) {
+    console.error("Failed to stop recording:", err);
+    showToast(`Failed to save note: ${err}`, true);
+    isRecordingNote = false;
+    isPaused = false;
+    recordingStartTime = null;
+    pendingNoteTitle = "";
+    clearInterval(recordingTimerInterval);
+    noteRecordingModal.style.display = "none";
+    notesListContainer.style.display = "block";
+  }
+}
+
+// Open note detail view
+async function openNoteDetail(noteId) {
+  try {
+    const note = await invoke("get_voice_note", { id: noteId });
+    currentNoteId = noteId;
+
+    // Hide list, show detail
+    notesListContainer.style.display = "none";
+    noteDetailView.style.display = "flex";
+
+    // Populate fields
+    noteTitleInput.value = note.title || "";
+    noteTranscription.value = note.transcription || "";
+
+    // Load audio
+    const audioUrl = await invoke("get_audio_file_url", { id: noteId });
+    noteAudioElement.src = audioUrl;
+  } catch (err) {
+    console.error("Failed to load note:", err);
+    showToast(`Failed to load note: ${err}`, true);
+  }
+}
+
+// Back to notes list
+function backToNotesList() {
+  noteDetailView.style.display = "none";
+  notesListContainer.style.display = "block";
+  currentNoteId = null;
+  noteAudioElement.pause();
+  noteAudioElement.src = "";
+  loadNotes();
+}
+
+// Save note changes
+async function saveNoteChanges() {
+  if (!currentNoteId) return;
+
+  try {
+    await invoke("update_voice_note", {
+      id: currentNoteId,
+      title: noteTitleInput.value || "Untitled Note",
+      transcription: noteTranscription.value || ""
+    });
+    showToast("Note saved!");
+  } catch (err) {
+    console.error("Failed to save note:", err);
+    showToast(`Failed to save note: ${err}`, true);
+  }
+}
+
+// Delete current note
+async function deleteCurrentNote() {
+  if (!currentNoteId) return;
+
+  if (!confirm("Are you sure you want to delete this note?")) return;
+
+  try {
+    await invoke("delete_voice_note", { id: currentNoteId });
+    showToast("Note deleted");
+    backToNotesList();
+  } catch (err) {
+    console.error("Failed to delete note:", err);
+    showToast(`Failed to delete note: ${err}`, true);
+  }
+}
+
+// Copy transcription to clipboard
+async function copyTranscription() {
+  if (!noteTranscription.value) {
+    showToast("No text to copy", true);
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(noteTranscription.value);
+    showToast("Copied to clipboard!");
+  } catch (err) {
+    showToast(`Failed to copy: ${err}`, true);
+  }
+}
+
+// Resize note recording canvas
+function resizeNoteCanvas() {
+  if (!noteRecordingCanvas) return;
+  const parent = noteRecordingCanvas.parentElement;
+  noteRecordingCanvas.width = parent.clientWidth;
+  noteRecordingCanvas.height = parent.clientHeight;
+}
+
+// Draw waveform for note recording
+function drawNoteWaveform() {
+  if (!isRecordingNote || !noteCtx || !noteRecordingCanvas) return;
+
+  const width = noteRecordingCanvas.width;
+  const height = noteRecordingCanvas.height;
+  const centerY = height / 2;
+
+  noteCtx.clearRect(0, 0, width, height);
+
+  // Draw waveform bars
+  const barCount = 60;
+  const barWidth = width / barCount;
+  const gap = 2;
+
+  for (let i = 0; i < barCount; i++) {
+    const x = i * barWidth + gap / 2;
+
+    // Simulate waveform with sine wave + noise
+    const time = Date.now() / 200;
+    const baseHeight = Math.sin(time + i * 0.3) * 0.3 + 0.5;
+    const noise = (Math.random() - 0.5) * 0.3;
+    const barHeight = (baseHeight + noise) * height * 0.6;
+
+    const gradient = noteCtx.createLinearGradient(0, centerY - barHeight / 2, 0, centerY + barHeight / 2);
+    gradient.addColorStop(0, "rgba(168, 85, 247, 0.8)");
+    gradient.addColorStop(0.5, "rgba(99, 102, 241, 0.6)");
+    gradient.addColorStop(1, "rgba(168, 85, 247, 0.8)");
+
+    noteCtx.fillStyle = gradient;
+    noteCtx.fillRect(x, centerY - barHeight / 2, barWidth - gap, barHeight);
+  }
+
+  requestAnimationFrame(drawNoteWaveform);
+}
+
+// Event listeners for Notes tab
+if (btnNewNote) {
+  btnNewNote.addEventListener("click", showTitleModal);
+}
+
+if (btnCancelTitle) {
+  btnCancelTitle.addEventListener("click", cancelTitleInput);
+}
+
+if (btnStartRecording) {
+  btnStartRecording.addEventListener("click", startRecordingWithTitle);
+}
+
+if (newNoteTitleInput) {
+  newNoteTitleInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      startRecordingWithTitle();
+    }
+  });
+}
+
+if (btnPauseRecording) {
+  btnPauseRecording.addEventListener("click", pauseRecording);
+}
+
+if (btnResumeRecording) {
+  btnResumeRecording.addEventListener("click", resumeRecording);
+}
+
+if (btnStopNoteRecording) {
+  btnStopNoteRecording.addEventListener("click", stopNoteRecording);
+}
+
+if (btnBackToNotes) {
+  btnBackToNotes.addEventListener("click", backToNotesList);
+}
+
+if (btnDeleteNote) {
+  btnDeleteNote.addEventListener("click", deleteCurrentNote);
+}
+
+if (btnSaveNote) {
+  btnSaveNote.addEventListener("click", saveNoteChanges);
+}
+
+if (btnCopyTranscription) {
+  btnCopyTranscription.addEventListener("click", copyTranscription);
 }
 
 init();

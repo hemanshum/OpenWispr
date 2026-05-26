@@ -5,6 +5,7 @@ mod api;
 mod config;
 mod history;
 mod downloader;
+pub mod voice_notes;
 
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -15,6 +16,7 @@ use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 use crate::audio::AudioRecorder;
 use crate::hotkey::{HotkeyEvent, HotkeyListener};
 use crate::config::AppConfig;
+use crate::voice_notes::{VoiceNote, create_voice_note, get_voice_notes, get_voice_note, update_voice_note, delete_voice_note, get_audio_file_url};
 
 pub struct AppState {
     pub recorder: Mutex<AudioRecorder>,
@@ -67,6 +69,117 @@ fn manual_trigger_start(state: State<'_, AppState>, app_handle: AppHandle) -> Re
 #[tauri::command]
 fn manual_trigger_stop(state: State<'_, AppState>, app_handle: AppHandle) -> Result<(), String> {
     stop_recording_internal(&app_handle, &state)
+}
+
+// Voice note recording commands
+#[tauri::command]
+fn start_voice_note_recording(state: State<'_, AppState>, app_handle: AppHandle) -> Result<(), String> {
+    start_recording_internal(&app_handle, &state)
+}
+
+#[tauri::command]
+async fn stop_voice_note_recording(
+    state: State<'_, AppState>,
+    app_handle: AppHandle,
+    title: String,
+) -> Result<VoiceNote, String> {
+    if !state.is_recording.load(Ordering::SeqCst) {
+        return Err("Not recording".to_string());
+    }
+
+    state.is_recording.store(false, Ordering::SeqCst);
+
+    // Stop recording and save to temp file
+    let temp_file_str = {
+        let mut recorder = state.recorder.lock().map_err(|e| format!("Lock error: {}", e))?;
+        let api_config = AppConfig::load(&app_handle);
+        let use_noise_gate = api_config.noise_gate;
+
+        let temp_dir = std::env::temp_dir();
+        let temp_file_path = temp_dir.join("murmur_voice_note.wav");
+        let temp_file_str = temp_file_path.to_string_lossy().to_string();
+
+        recorder.stop_recording(&temp_file_str, use_noise_gate)?;
+        temp_file_str
+    }; // Lock is dropped here
+
+    // Transcribe the audio
+    let transcription = transcribe_for_note(&app_handle, &temp_file_str).await?;
+
+    // Create the voice note
+    let note = create_voice_note(app_handle, title, transcription, temp_file_str)?;
+
+    Ok(note)
+}
+
+async fn transcribe_for_note(app_handle: &AppHandle, audio_path: &str) -> Result<String, String> {
+    let api_config = AppConfig::load(app_handle);
+    let tx_provider = api_config.transcription_provider.to_string();
+    let transcription_language = api_config.transcription_language.to_string();
+
+    let result = match tx_provider.as_str() {
+        "local_whisper" | "local_parakeet" => {
+            let model_id = if tx_provider == "local_parakeet" {
+                "parakeet_v3".to_string()
+            } else {
+                format!("whisper_{}", api_config.local_whisper_model)
+            };
+
+            let model_type = if tx_provider == "local_parakeet" {
+                "parakeet"
+            } else {
+                "whisper"
+            };
+
+            let is_downloaded = crate::downloader::check_model_downloaded(app_handle.clone(), model_id.clone());
+            if is_downloaded {
+                crate::api::transcribe_local_sherpa(
+                    app_handle,
+                    audio_path,
+                    model_type,
+                    &model_id,
+                    &transcription_language,
+                ).await
+            } else {
+                if tx_provider == "local_whisper" {
+                    crate::api::transcribe_local_whisper(
+                        audio_path,
+                        &api_config.local_whisper_model,
+                        &transcription_language,
+                    ).await
+                } else {
+                    Err("Model files are not downloaded. Please download the Nvidia Parakeet model in Settings.".to_string())
+                }
+            }
+        }
+        "openai" => {
+            crate::api::transcribe_openai(
+                audio_path,
+                &api_config.openai_api_key,
+                &api_config.openai_model,
+                &transcription_language,
+            ).await
+        }
+        "lm_studio" => {
+            crate::api::transcribe_lm_studio(
+                audio_path,
+                &api_config.lm_studio_url,
+                &transcription_language,
+            ).await
+        }
+        _ => { // "gemini"
+            let verbatim_prompt = "Transcribe the audio verbatim. Keep all original words, sounds, and filler sounds.";
+            crate::api::transcribe_and_clean_gemini(
+                audio_path,
+                &api_config.api_key,
+                verbatim_prompt,
+                "gemini-2.0-flash",
+                &transcription_language,
+            ).await
+        }
+    };
+
+    result
 }
 
 fn start_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(), String> {
@@ -388,6 +501,18 @@ fn cancel_recording(state: State<'_, AppState>, app_handle: AppHandle) -> Result
     cancel_recording_internal(&app_handle, &state)
 }
 
+#[tauri::command]
+fn pause_recording(state: State<'_, AppState>) -> Result<(), String> {
+    let mut recorder = state.recorder.lock().map_err(|e| format!("Lock error: {}", e))?;
+    recorder.pause_recording()
+}
+
+#[tauri::command]
+fn resume_recording(state: State<'_, AppState>) -> Result<(), String> {
+    let mut recorder = state.recorder.lock().map_err(|e| format!("Lock error: {}", e))?;
+    recorder.resume_recording()
+}
+
 async fn refine_text_internal(
     raw_text: &str,
     config: &AppConfig,
@@ -493,6 +618,14 @@ pub fn run() {
                 let _ = std::fs::write(&script_path, script_content);
             }
 
+            // Initialize voice_notes table
+            if let Ok(data_dir) = app_handle.path().app_data_dir() {
+                let db_path = data_dir.join("history.db");
+                if let Ok(conn) = rusqlite::Connection::open(&db_path) {
+                    let _ = voice_notes::init_voice_notes_table(&conn);
+                }
+            }
+
             crate::injector::start_focus_tracker();
 
             let listener = HotkeyListener::start(move |event| {
@@ -578,6 +711,8 @@ pub fn run() {
             manual_trigger_start,
             manual_trigger_stop,
             cancel_recording,
+            pause_recording,
+            resume_recording,
             get_audio_devices,
             start_mic_test,
             stop_mic_test,
@@ -587,7 +722,15 @@ pub fn run() {
             history::clear_all_history,
             downloader::check_model_downloaded,
             downloader::download_model_files,
-            downloader::delete_model_files
+            downloader::delete_model_files,
+            create_voice_note,
+            get_voice_notes,
+            get_voice_note,
+            update_voice_note,
+            delete_voice_note,
+            get_audio_file_url,
+            start_voice_note_recording,
+            stop_voice_note_recording
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
