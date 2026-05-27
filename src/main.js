@@ -1,4 +1,4 @@
-const { invoke } = window.__TAURI__.core;
+const { invoke, convertFileSrc } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 const { getCurrentWindow } = window.__TAURI__.window;
 
@@ -148,6 +148,13 @@ const notesList = document.getElementById("notes-list");
 const notesEmpty = document.getElementById("notes-empty");
 const notesCount = document.getElementById("notes-count");
 
+// Dashboard Notes Count & Notification Elements
+const statNotesCount = document.getElementById("stat-notes-count");
+const noteReadyNotification = document.getElementById("note-ready-notification");
+const noteReadyTitle = document.getElementById("note-ready-title");
+const noteReadySubtitle = document.getElementById("note-ready-subtitle");
+const noteReadyDismiss = document.getElementById("note-ready-dismiss");
+
 // App State
 let currentStatus = "Idle";
 let currentNoteId = null;
@@ -156,6 +163,8 @@ let isPaused = false;
 let recordingStartTime = null;
 let recordingTimerInterval = null;
 let pendingNoteTitle = "";
+let pendingNoteRefinement = "polished";
+let readyNoteId = null; // ID of the note that just finished background transcription
 let isPasswordVisible = false;
 let isOpenAiPasswordVisible = false;
 let phase = 0;
@@ -181,6 +190,16 @@ function updateStatsUI() {
   localStorage.setItem("murmur_total_words", totalWords);
   localStorage.setItem("murmur_wpm", wpm);
   localStorage.setItem("murmur_streak", streak);
+}
+
+// Load and display the total voice notes count on the dashboard
+async function loadNotesCount() {
+  try {
+    const notes = await invoke("get_voice_notes");
+    if (statNotesCount) statNotesCount.textContent = notes.length;
+  } catch (err) {
+    console.error("Failed to load notes count:", err);
+  }
 }
 
 // Search and filter state
@@ -1284,7 +1303,7 @@ function isShortcutDuplicate(combination, type) {
     return "Push to talk";
   }
   if (type !== "notes" && combination === currentNotesKey) {
-    return "Hands-free mode";
+    return "Notes";
   }
   if (type !== "cancel" && combination === currentCancelKey) {
     return "Cancel";
@@ -1569,62 +1588,50 @@ listen("show-tab", (event) => {
   }
 });
 
-// Listen for Voice Note events from global hotkeys
-listen("note-recording-started-from-hotkey", () => {
+// Listen for Notes hotkey — opens the title dialog instead of auto-recording
+listen("note-hotkey-open-title-dialog", () => {
   stopMicTesting();
-  
+
   // Switch to Notes tab visually
   if (tabNotes) tabNotes.click();
 
-  pendingNoteTitle = "Quick Note";
-  if (noteTitleModal) noteTitleModal.style.display = "none";
-  if (notesListContainer) notesListContainer.style.display = "none";
-  if (noteDetailView) noteDetailView.style.display = "none";
-  
-  isRecordingNote = true;
-  isPaused = false;
-  if (noteRecordingModal) noteRecordingModal.style.display = "flex";
-
-  // Update UI
-  if (recordingTitle) recordingTitle.textContent = pendingNoteTitle;
-  if (recordingTimer) recordingTimer.textContent = "00:00";
-  if (btnPauseRecording) btnPauseRecording.style.display = "none"; // Pause not available during global hold
-  if (btnResumeRecording) btnResumeRecording.style.display = "none";
-
-  // Start timer
-  recordingStartTime = Date.now();
-  if (recordingTimerInterval) clearInterval(recordingTimerInterval);
-  recordingTimerInterval = setInterval(updateRecordingTimer, 1000);
-
-  // Start drawing waveform
-  if (noteRecordingCanvas && noteCtx) {
-    resizeNoteCanvas();
-    drawNoteWaveform();
-  }
+  // Show the title input modal
+  showTitleModal();
 });
 
-listen("note-recording-stopping-from-hotkey", () => {
-  if (recordingTimerInterval) clearInterval(recordingTimerInterval);
-  showToast("Saving voice note...", false);
-});
-
-listen("note-recording-completed-from-hotkey", (event) => {
+// Listen for background transcription completion
+listen("note-transcription-complete", (event) => {
   const note = event.payload;
-  isRecordingNote = false;
-  isPaused = false;
-  recordingStartTime = null;
-  pendingNoteTitle = "";
-  if (noteRecordingModal) noteRecordingModal.style.display = "none";
+  if (!note) return;
 
-  loadNotes().then(() => {
-    if (note && note.id) {
-      openNoteDetail(note.id);
-    }
-  });
+  // Update the notes count on dashboard
+  loadNotesCount();
 
-  showToast("Voice note created!");
+  // Reload notes list if we are on the notes tab
+  loadNotes();
+
+  // If the user is currently viewing this note detail, refresh it
+  if (currentNoteId === note.id) {
+    if (noteTranscription) noteTranscription.value = note.transcription || "";
+  }
+
+  // Show the notification on the dashboard
+  readyNoteId = note.id;
+  if (noteReadyNotification) {
+    if (noteReadyTitle) noteReadyTitle.textContent = `"${note.title}" is ready!`;
+    if (noteReadySubtitle) noteReadySubtitle.textContent = "Click to view your transcribed note";
+    noteReadyNotification.style.display = "flex";
+  }
+
+  showToast(`Note "${note.title}" transcribed!`);
 });
 
+listen("note-transcription-failed", (event) => {
+  const errMsg = event.payload;
+  showToast(`Note transcription failed: ${errMsg}`, true);
+});
+
+// Listen for note recording cancellation from global hotkey
 listen("note-recording-cancelled-from-hotkey", () => {
   isRecordingNote = false;
   isPaused = false;
@@ -1632,8 +1639,9 @@ listen("note-recording-cancelled-from-hotkey", () => {
   pendingNoteTitle = "";
   if (recordingTimerInterval) clearInterval(recordingTimerInterval);
   if (noteRecordingModal) noteRecordingModal.style.display = "none";
+  if (noteTitleModal) noteTitleModal.style.display = "none";
   if (notesListContainer) notesListContainer.style.display = "block";
-  
+
   showToast("Voice note cancelled", true);
 });
 
@@ -1790,6 +1798,7 @@ async function init() {
   draw();
   await loadHistory();
   await updateLastPreparedFromHistory();
+  await loadNotesCount();
 }
 
 function calculateStreakFromHistory(entries) {
@@ -2109,6 +2118,11 @@ function showTitleModal() {
   notesListContainer.style.display = "none";
   noteDetailView.style.display = "none";
   newNoteTitleInput.value = "";
+  
+  // Reset refinement option to "polished"
+  const polishedRadio = document.querySelector('input[name="note-refinement-mode"][value="polished"]');
+  if (polishedRadio) polishedRadio.checked = true;
+
   newNoteTitleInput.focus();
 }
 
@@ -2126,6 +2140,9 @@ async function startRecordingWithTitle() {
     showToast("Please enter a title for the note", true);
     return;
   }
+
+  const refinementRadio = document.querySelector('input[name="note-refinement-mode"]:checked');
+  pendingNoteRefinement = refinementRadio ? refinementRadio.value : "polished";
 
   pendingNoteTitle = title;
   noteTitleModal.style.display = "none";
@@ -2209,18 +2226,18 @@ function parseTimerToMs(timerStr) {
   return (minutes * 60 + seconds) * 1000;
 }
 
-// Stop recording and save voice note
+// Stop recording and save voice note (background STT)
 async function stopNoteRecording() {
   if (!isRecordingNote) return;
 
   try {
-    // Show loading state
-    showToast("Processing voice note...", false);
     clearInterval(recordingTimerInterval);
+    showToast("Saving audio... transcription will continue in background", false);
 
-    // Stop recording and create note in one call
-    const note = await invoke("stop_voice_note_recording", {
-      title: pendingNoteTitle || "Untitled Note"
+    // Stop recording with background transcription — returns immediately
+    const note = await invoke("stop_voice_note_recording_bg", {
+      title: pendingNoteTitle || "Untitled Note",
+      refineMode: pendingNoteRefinement
     });
 
     isRecordingNote = false;
@@ -2229,11 +2246,14 @@ async function stopNoteRecording() {
     pendingNoteTitle = "";
     noteRecordingModal.style.display = "none";
 
-    // Reload notes and open the new note
+    // Reload notes list (note will show with "Transcribing..." placeholder)
     await loadNotes();
-    openNoteDetail(note.id);
+    loadNotesCount();
 
-    showToast("Voice note created!");
+    // Return to notes list so the user can continue working
+    notesListContainer.style.display = "block";
+
+    showToast("Note saved! Transcription processing in background...");
   } catch (err) {
     console.error("Failed to stop recording:", err);
     showToast(`Failed to save note: ${err}`, true);
@@ -2262,7 +2282,12 @@ async function openNoteDetail(noteId) {
     noteTranscription.value = note.transcription || "";
 
     // Load audio
-    const audioUrl = await invoke("get_audio_file_url", { id: noteId });
+    const filePath = await invoke("get_audio_file_url", { id: noteId });
+    let cleanPath = filePath;
+    if (filePath.startsWith("file://")) {
+      cleanPath = filePath.substring(7);
+    }
+    const audioUrl = convertFileSrc(cleanPath);
     noteAudioElement.src = audioUrl;
   } catch (err) {
     console.error("Failed to load note:", err);
@@ -2307,6 +2332,7 @@ async function deleteCurrentNote() {
     await invoke("delete_voice_note", { id: currentNoteId });
     showToast("Note deleted");
     backToNotesList();
+    loadNotesCount();
   } catch (err) {
     console.error("Failed to delete note:", err);
     showToast(`Failed to delete note: ${err}`, true);
@@ -2419,6 +2445,30 @@ if (btnSaveNote) {
 
 if (btnCopyTranscription) {
   btnCopyTranscription.addEventListener("click", copyTranscription);
+}
+
+// Note Ready Notification — click to view the note
+if (noteReadyNotification) {
+  noteReadyNotification.addEventListener("click", (e) => {
+    // Don't navigate if dismiss button was clicked
+    if (e.target === noteReadyDismiss || e.target.closest(".note-ready-dismiss")) return;
+    if (readyNoteId) {
+      // Switch to Notes tab
+      if (tabNotes) tabNotes.click();
+      openNoteDetail(readyNoteId);
+      readyNoteId = null;
+    }
+    noteReadyNotification.style.display = "none";
+  });
+}
+
+// Note Ready Notification — dismiss button
+if (noteReadyDismiss) {
+  noteReadyDismiss.addEventListener("click", (e) => {
+    e.stopPropagation();
+    noteReadyNotification.style.display = "none";
+    readyNoteId = null;
+  });
 }
 
 init();

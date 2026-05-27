@@ -124,6 +124,91 @@ async fn stop_voice_note_recording(
     stop_voice_note_recording_internal(&state, &app_handle, title).await
 }
 
+/// Stop recording and process transcription in the background.
+/// Returns the note immediately with placeholder transcription so the user can
+/// continue using the default transcribing feature without waiting.
+#[tauri::command]
+async fn stop_voice_note_recording_bg(
+    state: State<'_, AppState>,
+    app_handle: AppHandle,
+    title: String,
+    refine_mode: String,
+) -> Result<VoiceNote, String> {
+    if !state.is_recording.load(Ordering::SeqCst) {
+        return Err("Not recording".to_string());
+    }
+
+    state.is_recording.store(false, Ordering::SeqCst);
+    update_status(&app_handle, &state, "Idle");
+
+    // Stop recording and save to temp file
+    let temp_file_str = {
+        let mut recorder = state.recorder.lock().map_err(|e| format!("Lock error: {}", e))?;
+        let api_config = AppConfig::load(&app_handle);
+        let use_noise_gate = api_config.noise_gate;
+
+        let temp_dir = std::env::temp_dir();
+        // Use a unique filename to avoid conflicts with concurrent recordings
+        let ts = chrono::Local::now().format("%Y%m%d%H%M%S").to_string();
+        let temp_file_path = temp_dir.join(format!("murmur_vn_{}.wav", ts));
+        let temp_file_str = temp_file_path.to_string_lossy().to_string();
+
+        recorder.stop_recording(&temp_file_str, use_noise_gate)?;
+        temp_file_str
+    };
+
+    // Create voice note immediately with placeholder text
+    let note = create_voice_note(
+        app_handle.clone(),
+        title.clone(),
+        "Transcribing...".to_string(),
+        temp_file_str.clone(),
+    )?;
+
+    let note_id = note.id;
+    let note_title = note.title.clone();
+    let app_clone = app_handle.clone();
+
+    // Spawn background transcription task
+    tokio::spawn(async move {
+        match transcribe_for_note(&app_clone, &temp_file_str).await {
+            Ok(transcription) => {
+                let final_text = if refine_mode == "polished" {
+                    let api_config = AppConfig::load(&app_clone);
+                    match refine_text_internal(&transcription, &api_config).await {
+                        Ok(refined) => refined,
+                        Err(e) => {
+                            eprintln!("Note refinement failed, falling back to raw transcription: {}", e);
+                            transcription
+                        }
+                    }
+                } else {
+                    transcription
+                };
+
+                // Update the note with the real transcription
+                match update_voice_note(app_clone.clone(), note_id, note_title.clone(), final_text) {
+                    Ok(updated_note) => {
+                        let _ = app_clone.emit("note-transcription-complete", updated_note);
+                    }
+                    Err(e) => {
+                        let _ = app_clone.emit("note-transcription-failed", format!("Failed to save transcription: {}", e));
+                    }
+                }
+            }
+            Err(e) => {
+                // Update note with error message
+                let _ = update_voice_note(app_clone.clone(), note_id, note_title, format!("Transcription failed: {}", e));
+                let _ = app_clone.emit("note-transcription-failed", e);
+            }
+        }
+        // Clean up the temp audio file
+        let _ = std::fs::remove_file(&temp_file_str);
+    });
+
+    Ok(note)
+}
+
 async fn transcribe_for_note(app_handle: &AppHandle, audio_path: &str) -> Result<String, String> {
     let api_config = AppConfig::load(app_handle);
     let tx_provider = api_config.transcription_provider.to_string();
@@ -666,8 +751,11 @@ pub fn run() {
                                 let _ = start_recording_internal(&app_handle, &app_state);
                             }
                             RecordingType::Notes => {
-                                let _ = start_recording_internal(&app_handle, &app_state);
-                                let _ = app_handle.emit("note-recording-started-from-hotkey", ());
+                                // Bring the main window to the foreground and open the title dialog
+                                if let Some(window) = app_handle.get_webview_window("main") {
+                                    focus_window(&window);
+                                }
+                                let _ = app_handle.emit("note-hotkey-open-title-dialog", ());
                             }
                         }
                     }
@@ -677,35 +765,29 @@ pub fn run() {
                                 let _ = stop_recording_internal(&app_handle, &app_state);
                             }
                             RecordingType::Notes => {
-                                let app_handle_clone = app_handle.clone();
-                                tokio::spawn(async move {
-                                    let app_state_clone = app_handle_clone.state::<AppState>();
-                                    let now_str = chrono::Local::now().format("%b %d, %Y %I:%M %p").to_string();
-                                    let title = format!("Quick Note - {}", now_str);
-                                    let _ = app_handle_clone.emit("note-recording-stopping-from-hotkey", ());
-                                    match stop_voice_note_recording_internal(&app_state_clone, &app_handle_clone, title).await {
-                                        Ok(note) => {
-                                            let _ = app_handle_clone.emit("note-recording-completed-from-hotkey", note);
-                                        }
-                                        Err(e) => {
-                                            let _ = app_handle_clone.emit("note-recording-failed-from-hotkey", e);
-                                        }
-                                    }
-                                });
+                                // Notes recording lifecycle is controlled by the UI.
+                                // No action needed on key release.
                             }
                         }
                     }
                     HotkeyEvent::Cancelled(rec_type) => {
-                        let _ = cancel_recording_internal(&app_handle, &app_state);
                         match rec_type {
-                            RecordingType::Transcribe => {}
+                            RecordingType::Transcribe => {
+                                let _ = cancel_recording_internal(&app_handle, &app_state);
+                            }
                             RecordingType::Notes => {
-                                let _ = app_handle.emit("note-recording-cancelled-from-hotkey", ());
+                                // Only cancel if we're actively recording a note
+                                if app_state.is_recording.load(Ordering::SeqCst) {
+                                    let _ = cancel_recording_internal(&app_handle, &app_state);
+                                    let _ = app_handle.emit("note-recording-cancelled-from-hotkey", ());
+                                }
                             }
                         }
                     }
                     HotkeyEvent::GlobalCancel => {
-                        let _ = cancel_recording_internal(&app_handle, &app_state);
+                        if app_state.is_recording.load(Ordering::SeqCst) {
+                            let _ = cancel_recording_internal(&app_handle, &app_state);
+                        }
                         let _ = app_handle.emit("note-recording-cancelled-from-hotkey", ());
                     }
                 }
@@ -798,7 +880,8 @@ pub fn run() {
             delete_voice_note,
             get_audio_file_url,
             start_voice_note_recording,
-            stop_voice_note_recording
+            stop_voice_note_recording,
+            stop_voice_note_recording_bg
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
