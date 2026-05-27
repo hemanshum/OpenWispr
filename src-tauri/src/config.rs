@@ -50,6 +50,8 @@ pub struct AppConfig {
     pub transcribe_key: String,
     #[serde(default = "default_notes_key")]
     pub notes_key: String,
+    #[serde(default = "default_cancel_key")]
+    pub cancel_key: String,
 }
 
 fn default_transcribe_key() -> String {
@@ -58,6 +60,10 @@ fn default_transcribe_key() -> String {
 
 fn default_notes_key() -> String {
     "Control + Win".to_string()
+}
+
+fn default_cancel_key() -> String {
+    "Escape".to_string()
 }
 
 fn default_model() -> String {
@@ -162,6 +168,7 @@ impl AppConfig {
             lm_studio_model: "".to_string(),
             transcribe_key: "Control".to_string(),
             notes_key: "Control + Win".to_string(),
+            cancel_key: "Escape".to_string(),
         }
     }
 

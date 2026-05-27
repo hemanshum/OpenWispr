@@ -22,6 +22,7 @@ pub struct AppState {
     pub recorder: Mutex<AudioRecorder>,
     pub is_recording: AtomicBool,
     pub status: Mutex<String>,
+    pub is_transcribe_cancelled: AtomicBool,
 }
 
 #[tauri::command]
@@ -38,7 +39,7 @@ fn get_app_version() -> String {
 #[tauri::command]
 fn load_config(app_handle: AppHandle) -> AppConfig {
     let config = AppConfig::load(&app_handle);
-    crate::hotkey::update_hotkeys(&config.transcribe_key, &config.notes_key);
+    crate::hotkey::update_hotkeys(&config.transcribe_key, &config.notes_key, &config.cancel_key);
     config
 }
 
@@ -47,7 +48,7 @@ fn save_config(config: AppConfig, app_handle: AppHandle, state: State<'_, AppSta
     if let Ok(recorder) = state.recorder.lock() {
         recorder.noise_gate_enabled.store(config.noise_gate, std::sync::atomic::Ordering::SeqCst);
     }
-    crate::hotkey::update_hotkeys(&config.transcribe_key, &config.notes_key);
+    crate::hotkey::update_hotkeys(&config.transcribe_key, &config.notes_key, &config.cancel_key);
     config.save(&app_handle)
 }
 
@@ -276,6 +277,7 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
     }
 
     state.is_recording.store(false, Ordering::SeqCst);
+    state.is_transcribe_cancelled.store(false, Ordering::SeqCst);
     update_status(app_handle, state, "Transcribing");
 
     let mut recorder = state.recorder.lock().map_err(|e| format!("Lock error: {}", e))?;
@@ -454,6 +456,12 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
             }
         };
 
+        if app_state.is_transcribe_cancelled.load(Ordering::SeqCst) {
+            update_status(&app_handle_clone, &app_state, "Idle");
+            let _ = std::fs::remove_file(temp_file_str);
+            return;
+        }
+
         match result {
             Ok(transcribed_text) => {
                 if transcribed_text.is_empty() {
@@ -494,7 +502,13 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
 }
 
 fn cancel_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(), String> {
+    state.is_transcribe_cancelled.store(true, Ordering::SeqCst);
+
     if !state.is_recording.load(Ordering::SeqCst) {
+        let status = state.status.lock().unwrap().clone();
+        if status == "Transcribing" {
+            update_status(app_handle, state, "Idle");
+        }
         return Ok(());
     }
 
@@ -611,6 +625,7 @@ pub fn run() {
             recorder: Mutex::new(AudioRecorder::new()),
             is_recording: AtomicBool::new(false),
             status: Mutex::new("Idle".to_string()),
+            is_transcribe_cancelled: AtomicBool::new(false),
         })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
@@ -638,7 +653,7 @@ pub fn run() {
             }
 
             let config = AppConfig::load(&app_handle);
-            crate::hotkey::update_hotkeys(&config.transcribe_key, &config.notes_key);
+            crate::hotkey::update_hotkeys(&config.transcribe_key, &config.notes_key, &config.cancel_key);
 
             crate::injector::start_focus_tracker();
 
@@ -688,6 +703,10 @@ pub fn run() {
                                 let _ = app_handle.emit("note-recording-cancelled-from-hotkey", ());
                             }
                         }
+                    }
+                    HotkeyEvent::GlobalCancel => {
+                        let _ = cancel_recording_internal(&app_handle, &app_state);
+                        let _ = app_handle.emit("note-recording-cancelled-from-hotkey", ());
                     }
                 }
             });

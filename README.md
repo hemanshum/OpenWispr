@@ -8,7 +8,16 @@ With a beautiful dark-mode glassmorphic interface, real-time waveform visualizer
 
 ## ✨ Features
 
-- **🌐 Global Trigger Key (`Ctrl`)**: Hold down the `Ctrl` key to record your voice instantly. Release the key to transcribe, polish, and paste the output straight into any active window or input field (with fallback clipboard copy for restricted applications).
+- **🌐 Global Customizable Trigger Keys**: Fully customize global hotkey actions for Push to talk, Hands-free mode, and Cancel directly in settings.
+- **⚙️ Interactive Keyboard Shortcut Recorder (New)**:
+  - **Push to talk**: Triggers speech-to-text dictation (Default: `Ctrl`).
+  - **Hands-free mode**: Dictate hands-free by pressing to start and stop (Default: `Ctrl + Win`).
+  - **Cancel Shortcut**: Instantly dismisses active recordings or transcriptions.
+  - **Recording Engine**: Click any shortcut display box to enter a pulsing "Recording..." state. Just press your desired shortcut to capture it!
+    - Supports rich **multi-modifier combinations** (`Control`, `Win`, `Shift`, `Alt`) for Push to talk and Hands-free mode, saving automatically when all keys are released.
+    - Supports **multi-key combinations & chords** (e.g. `Control + Shift + C`, `Alt + Escape`, `F12`) for Cancel, saving instantly on keydown.
+  - **Tactile Keycaps UI**: Displays beautiful 3D off-white keycap pills representing your shortcut keys in real time.
+  - **Duplication Safeguard**: Automatically checks if a newly recorded shortcut is already assigned to another action. If a duplicate is detected, it blocks the assignment and shows a clear warning toast to keep your hotkeys unique.
 - **☁️ Cloud & 🔌 Offline Transcription**:
   - **Google Gemini (Cloud)**: Blazing-fast transcription and refinement in a single optimized request (~1.5s).
   - **OpenAI Whisper (Cloud)**: Highly optimized Whisper API cloud transcription (~1.5s).

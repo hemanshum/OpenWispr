@@ -1,5 +1,8 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
+const { getCurrentWindow } = window.__TAURI__.window;
+
+const appWindow = getCurrentWindow();
 
 // UI Elements
 const tabDash = document.getElementById("tab-dash");
@@ -11,6 +14,10 @@ const contentHistory = document.getElementById("content-history");
 const contentNotes = document.getElementById("content-notes");
 const contentSettings = document.getElementById("content-settings");
 
+const btnMinimize = document.getElementById("btn-minimize");
+const btnMaximize = document.getElementById("btn-maximize");
+const btnClose = document.getElementById("btn-close");
+
 const subTabAudio = document.getElementById("sub-tab-audio");
 const subTabAi = document.getElementById("sub-tab-ai");
 const subTabHotkeys = document.getElementById("sub-tab-hotkeys");
@@ -20,8 +27,19 @@ const subContentAi = document.getElementById("sub-content-ai");
 const subContentHotkeys = document.getElementById("sub-content-hotkeys");
 const subContentModels = document.getElementById("sub-content-models");
 
-const selectTranscribeHotkey = document.getElementById("transcribe-hotkey-select");
-const selectNotesHotkey = document.getElementById("notes-hotkey-select");
+const transcribeHotkeyDisplay = document.getElementById("transcribe-hotkey-display");
+const notesHotkeyDisplay = document.getElementById("notes-hotkey-display");
+const cancelHotkeyDisplay = document.getElementById("cancel-hotkey-display");
+const btnResetHotkeys = document.getElementById("btn-reset-hotkeys");
+
+// Hotkey Recording State Variables
+let activeRecordingType = null; // 'transcribe', 'notes', or 'cancel'
+let currentTranscribeKey = "Control";
+let currentNotesKey = "Control + Win";
+let currentCancelKey = "Escape";
+let tempModifiers = []; // stores temporary modifier keys during recording
+let recordedBaseKey = null; // regular non-modifier key pressed during recording
+let accumulatedModifiers = []; // tracks the maximum modifier combination pressed during recording
 
 const selectMic = document.getElementById("mic-select");
 const btnTestMic = document.getElementById("btn-test-mic");
@@ -155,20 +173,10 @@ function updateStatsUI() {
   const totalWordsEl = document.getElementById("stat-total-words");
   const wpmEl = document.getElementById("stat-wpm");
   const streakEl = document.getElementById("stat-streak");
-  const progressFillEl = document.getElementById("voice-progress-fill");
-  const unlockWordsEl = document.getElementById("unlock-words-count");
 
   if (totalWordsEl) totalWordsEl.textContent = totalWords;
   if (wpmEl) wpmEl.textContent = wpm;
   if (streakEl) streakEl.textContent = streak;
-
-  // Unlocking voice profile target: 1705 words
-  const targetWords = 1705;
-  const progressPercent = Math.min(100, Math.max(0, (totalWords / targetWords) * 100));
-  if (progressFillEl) progressFillEl.style.width = `${progressPercent}%`;
-
-  const remaining = Math.max(0, targetWords - totalWords);
-  if (unlockWordsEl) unlockWordsEl.textContent = remaining;
 
   localStorage.setItem("murmur_total_words", totalWords);
   localStorage.setItem("murmur_wpm", wpm);
@@ -194,6 +202,29 @@ function filterAndRenderHistory() {
   renderHistory(filtered);
 }
 
+// Window Controls
+if (btnMinimize) {
+  btnMinimize.addEventListener("click", () => appWindow.minimize());
+}
+if (btnMaximize) {
+  btnMaximize.addEventListener("click", () => appWindow.toggleMaximize());
+}
+if (btnClose) {
+  btnClose.addEventListener("click", () => appWindow.close());
+}
+
+// Bring window forward and make focusable on click/mousedown
+document.addEventListener("mousedown", () => {
+  invoke("set_window_focusable", { focusable: true }).catch((err) => console.error(err));
+});
+
+// Auto-disable focusability on blur if dashboard is active to behave as background helper
+window.addEventListener("blur", () => {
+  if (tabDash.classList.contains("active")) {
+    invoke("set_window_focusable", { focusable: false }).catch((err) => console.error(err));
+  }
+});
+
 // Tab Switcher
 tabDash.addEventListener("click", () => {
   stopMicTesting(); // Always stop mic test when switching back to dashboard
@@ -205,7 +236,6 @@ tabDash.addEventListener("click", () => {
   contentHistory.classList.remove("active");
   contentNotes.classList.remove("active");
   contentSettings.classList.remove("active");
-  invoke("set_window_focusable", { focusable: false }).catch((err) => console.error(err));
 });
 
 tabHistory.addEventListener("click", () => {
@@ -953,8 +983,9 @@ async function autoSaveConfig() {
     custom_api_model: inputCustomApiModel.value.trim(),
     lm_studio_url: inputLmStudioUrl.value.trim() || inputLmStudioTranscriptionUrl.value.trim(),
     lm_studio_model: inputLmStudioModel.value.trim(),
-    transcribe_key: selectTranscribeHotkey ? selectTranscribeHotkey.value : "Control",
-    notes_key: selectNotesHotkey ? selectNotesHotkey.value : "Control + Win",
+    transcribe_key: currentTranscribeKey,
+    notes_key: currentNotesKey,
+    cancel_key: currentCancelKey,
   };
 
   try {
@@ -1111,16 +1142,40 @@ async function initConfig() {
     inputLmStudioTranscriptionUrl.value = config.lm_studio_url || "http://localhost:1234";
     inputLmStudioModel.value = config.lm_studio_model || "";
 
-    if (selectTranscribeHotkey) {
-      selectTranscribeHotkey.value = config.transcribe_key || "Control";
-    }
-    if (selectNotesHotkey) {
-      selectNotesHotkey.value = config.notes_key || "Control + Win";
-    }
-    updateDashboardKeycaps(config.transcribe_key || "Control");
+    currentTranscribeKey = config.transcribe_key || "Control";
+    currentNotesKey = config.notes_key || "Control + Win";
+    currentCancelKey = config.cancel_key || "Escape";
+
+    renderVisualKeycapsFromKeyName(currentTranscribeKey, transcribeHotkeyDisplay);
+    renderVisualKeycapsFromKeyName(currentNotesKey, notesHotkeyDisplay);
+    renderVisualKeycapsFromKeyName(currentCancelKey, cancelHotkeyDisplay);
+    updateDashboardKeycaps(currentTranscribeKey);
   } catch (err) {
     showToast("Error loading saved configurations", true);
   }
+}
+
+function renderVisualKeycapsFromKeyName(val, displayEl) {
+  if (!displayEl) return;
+  displayEl.innerHTML = "";
+  
+  if (!val) return;
+  const parts = val.split(" + ");
+  parts.forEach(part => {
+    let displayPart = part;
+    if (displayPart === "Control") displayPart = "Ctrl";
+    if (displayPart === "Escape") displayPart = "esc";
+    
+    const span = document.createElement("span");
+    span.className = "visual-keycap";
+    span.textContent = displayPart;
+    displayEl.appendChild(span);
+  });
+  
+  const pencil = document.createElement("span");
+  pencil.className = "edit-pencil-indicator";
+  pencil.textContent = "✏️";
+  displayEl.appendChild(pencil);
 }
 
 function updateDashboardKeycaps(keyName) {
@@ -1140,19 +1195,317 @@ function updateDashboardKeycaps(keyName) {
   keycapRow.appendChild(span);
 }
 
-// Add event listeners for Hotkey triggers change
-if (selectTranscribeHotkey) {
-  selectTranscribeHotkey.addEventListener("change", async () => {
-    updateDashboardKeycaps(selectTranscribeHotkey.value);
-    await autoSaveConfig();
-    showToast("Transcribe hotkey updated");
+// Add event listeners for Hotkey triggers click to enter recording
+if (transcribeHotkeyDisplay) {
+  transcribeHotkeyDisplay.addEventListener("click", (e) => {
+    e.stopPropagation();
+    enterRecordingMode("transcribe");
+  });
+}
+if (notesHotkeyDisplay) {
+  notesHotkeyDisplay.addEventListener("click", (e) => {
+    e.stopPropagation();
+    enterRecordingMode("notes");
+  });
+}
+if (cancelHotkeyDisplay) {
+  cancelHotkeyDisplay.addEventListener("click", (e) => {
+    e.stopPropagation();
+    enterRecordingMode("cancel");
   });
 }
 
-if (selectNotesHotkey) {
-  selectNotesHotkey.addEventListener("change", async () => {
+function getDisplayElement(type) {
+  if (type === "transcribe") return transcribeHotkeyDisplay;
+  if (type === "notes") return notesHotkeyDisplay;
+  if (type === "cancel") return cancelHotkeyDisplay;
+  return null;
+}
+
+function getActiveDisplayElement() {
+  return getDisplayElement(activeRecordingType);
+}
+
+function enterRecordingMode(type) {
+  if (activeRecordingType) {
+    exitRecordingMode(false);
+  }
+
+  activeRecordingType = type;
+  tempModifiers = [];
+  recordedBaseKey = null;
+  accumulatedModifiers = [];
+
+  const displayEl = getDisplayElement(type);
+  if (!displayEl) return;
+
+  displayEl.classList.add("recording");
+  displayEl.innerHTML = '<span class="recording-dot"></span><span>Recording...</span>';
+  displayEl.focus();
+}
+
+async function exitRecordingMode(saveChanges) {
+  if (!activeRecordingType) return;
+
+  const type = activeRecordingType;
+  const displayEl = getDisplayElement(type);
+  
+  activeRecordingType = null;
+  tempModifiers = [];
+  recordedBaseKey = null;
+  accumulatedModifiers = [];
+
+  if (displayEl) {
+    displayEl.classList.remove("recording");
+    displayEl.blur();
+  }
+
+  let currentKey = "Control";
+  if (type === "transcribe") {
+    currentKey = currentTranscribeKey;
+  } else if (type === "notes") {
+    currentKey = currentNotesKey;
+  } else if (type === "cancel") {
+    currentKey = currentCancelKey;
+  }
+
+  renderVisualKeycapsFromKeyName(currentKey, displayEl);
+
+  if (saveChanges) {
+    if (type === "transcribe") {
+      updateDashboardKeycaps(currentTranscribeKey);
+    }
     await autoSaveConfig();
-    showToast("Voice notes hotkey updated");
+  }
+}
+
+function isShortcutDuplicate(combination, type) {
+  if (type !== "transcribe" && combination === currentTranscribeKey) {
+    return "Push to talk";
+  }
+  if (type !== "notes" && combination === currentNotesKey) {
+    return "Hands-free mode";
+  }
+  if (type !== "cancel" && combination === currentCancelKey) {
+    return "Cancel";
+  }
+  return null;
+}
+
+function renderTemporaryKeycaps(keys, baseKey) {
+  const displayEl = getActiveDisplayElement();
+  if (!displayEl) return;
+
+  displayEl.innerHTML = "";
+  keys.forEach(part => {
+    let displayPart = part;
+    if (displayPart === "Control") displayPart = "Ctrl";
+    if (displayPart === "Escape") displayPart = "esc";
+    
+    const span = document.createElement("span");
+    span.className = "visual-keycap";
+    span.textContent = displayPart;
+    displayEl.appendChild(span);
+  });
+
+  if (baseKey) {
+    let displayPart = baseKey;
+    if (displayPart === "Escape") displayPart = "esc";
+    
+    const span = document.createElement("span");
+    span.className = "visual-keycap";
+    span.textContent = displayPart;
+    displayEl.appendChild(span);
+  }
+
+  const pencil = document.createElement("span");
+  pencil.className = "edit-pencil-indicator";
+  pencil.textContent = "✏️";
+  displayEl.appendChild(pencil);
+}
+
+function mapModifierKey(key) {
+  if (key === "Control" || key === "Ctrl") return "Control";
+  if (key === "Meta" || key === "OS" || key === "Win") return "Win";
+  if (key === "Shift") return "Shift";
+  if (key === "Alt") return "Alt";
+  return null;
+}
+
+function mapKeyToCanonical(e) {
+  if (["Control", "Shift", "Alt", "Meta", "OS"].includes(e.key)) {
+    return null;
+  }
+
+  if (e.key === " ") {
+    return "Space";
+  }
+
+  if (e.key.length === 1) {
+    return e.key.toUpperCase();
+  }
+
+  return e.key;
+}
+
+// Global Keyboard Recording Listeners
+window.addEventListener("keydown", (e) => {
+  if (!activeRecordingType) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  // Escape key cancels active recording only if not recording 'cancel' itself (unless modifiers are held)
+  if (e.key === "Escape" && activeRecordingType !== "cancel" && !e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
+    exitRecordingMode(false);
+    return;
+  }
+
+  // Determine held modifiers
+  let heldModifiers = [];
+  if (e.ctrlKey) heldModifiers.push("Control");
+  if (e.metaKey) heldModifiers.push("Win");
+  if (e.shiftKey) heldModifiers.push("Shift");
+  if (e.altKey) heldModifiers.push("Alt");
+
+  // If e.key is a modifier itself, we can make sure it is included
+  const keyCanonical = mapModifierKey(e.key);
+  if (keyCanonical && !heldModifiers.includes(keyCanonical)) {
+    heldModifiers.push(keyCanonical);
+  }
+
+  let orderedModifiers = [];
+  if (heldModifiers.includes("Control")) orderedModifiers.push("Control");
+  if (heldModifiers.includes("Win")) orderedModifiers.push("Win");
+  if (heldModifiers.includes("Shift")) orderedModifiers.push("Shift");
+  if (heldModifiers.includes("Alt")) orderedModifiers.push("Alt");
+
+  const isModifier = ["Control", "Shift", "Alt", "Meta", "OS"].includes(e.key);
+
+  if (!isModifier) {
+    // It's a regular key, which means this key combination is complete!
+    let canonicalKey = mapKeyToCanonical(e);
+    if (canonicalKey) {
+      recordedBaseKey = canonicalKey;
+      tempModifiers = orderedModifiers;
+      
+      // Construct final combination string
+      let combination = "";
+      if (tempModifiers.length > 0) {
+        combination = tempModifiers.join(" + ") + " + " + recordedBaseKey;
+      } else {
+        combination = recordedBaseKey;
+      }
+      
+      // Perform duplicate check
+      const duplicateType = isShortcutDuplicate(combination, activeRecordingType);
+      if (duplicateType) {
+        showToast(`Shortcut '${combination}' is already in use by ${duplicateType}!`, true);
+        exitRecordingMode(false);
+        return;
+      }
+      
+      // Uniquely set and save
+      if (activeRecordingType === "transcribe") {
+        currentTranscribeKey = combination;
+      } else if (activeRecordingType === "notes") {
+        currentNotesKey = combination;
+      } else if (activeRecordingType === "cancel") {
+        currentCancelKey = combination;
+      }
+      
+      exitRecordingMode(true);
+    }
+  } else {
+    // It is a modifier key. Update held and accumulated modifier states
+    tempModifiers = orderedModifiers;
+    if (orderedModifiers.length > accumulatedModifiers.length) {
+      accumulatedModifiers = orderedModifiers;
+    }
+    renderTemporaryKeycaps(orderedModifiers, null);
+  }
+}, { capture: true });
+
+window.addEventListener("keyup", (e) => {
+  if (!activeRecordingType) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  // If a regular key was already pressed and recorded, keydown handled it.
+  // We only handle keyup to detect modifier-only sequences when all modifiers are released.
+  const isModifier = ["Control", "Shift", "Alt", "Meta", "OS"].includes(e.key);
+  if (!isModifier) return;
+
+  let heldModifiers = [];
+  if (e.ctrlKey) heldModifiers.push("Control");
+  if (e.metaKey) heldModifiers.push("Win");
+  if (e.shiftKey) heldModifiers.push("Shift");
+  if (e.altKey) heldModifiers.push("Alt");
+
+  let orderedModifiers = [];
+  if (heldModifiers.includes("Control")) orderedModifiers.push("Control");
+  if (heldModifiers.includes("Win")) orderedModifiers.push("Win");
+  if (heldModifiers.includes("Shift")) orderedModifiers.push("Shift");
+  if (heldModifiers.includes("Alt")) orderedModifiers.push("Alt");
+
+  if (orderedModifiers.length === 0) {
+    // All modifier keys were fully released!
+    // Since no regular key was pressed, it was a modifier-only sequence.
+    if (accumulatedModifiers.length > 0) {
+      const combination = accumulatedModifiers.join(" + ");
+      
+      // Duplicate check
+      const duplicateType = isShortcutDuplicate(combination, activeRecordingType);
+      if (duplicateType) {
+        showToast(`Shortcut '${combination}' is already in use by ${duplicateType}!`, true);
+        exitRecordingMode(false);
+        return;
+      }
+      
+      if (activeRecordingType === "transcribe") {
+        currentTranscribeKey = combination;
+      } else if (activeRecordingType === "notes") {
+        currentNotesKey = combination;
+      } else if (activeRecordingType === "cancel") {
+        currentCancelKey = combination;
+      }
+      
+      exitRecordingMode(true);
+    } else {
+      // Just clicked and released without pressing keys, ignore
+      exitRecordingMode(false);
+    }
+  } else {
+    // Update active modifiers visually
+    tempModifiers = orderedModifiers;
+    renderTemporaryKeycaps(orderedModifiers, null);
+  }
+}, { capture: true });
+
+// Clicking outside exits recording mode without saving
+document.addEventListener("mousedown", (e) => {
+  if (activeRecordingType) {
+    const activeDisplay = getActiveDisplayElement();
+    if (activeDisplay && !activeDisplay.contains(e.target)) {
+      exitRecordingMode(false);
+    }
+  }
+});
+
+if (btnResetHotkeys) {
+  btnResetHotkeys.addEventListener("click", async () => {
+    currentTranscribeKey = "Control";
+    currentNotesKey = "Control + Win";
+    currentCancelKey = "Escape";
+
+    renderVisualKeycapsFromKeyName(currentTranscribeKey, transcribeHotkeyDisplay);
+    renderVisualKeycapsFromKeyName(currentNotesKey, notesHotkeyDisplay);
+    renderVisualKeycapsFromKeyName(currentCancelKey, cancelHotkeyDisplay);
+    updateDashboardKeycaps("Control");
+
+    await autoSaveConfig();
+    showToast("Shortcuts reset to default");
   });
 }
 
@@ -1435,14 +1788,75 @@ async function init() {
   await loadModelsManager();
 
   draw();
-  updateStatsUI();
+  await loadHistory();
   await updateLastPreparedFromHistory();
+}
+
+function calculateStreakFromHistory(entries) {
+  if (!entries || entries.length === 0) return 0;
+  
+  // Extract unique dates as YYYY-MM-DD
+  const dates = new Set();
+  entries.forEach(entry => {
+    if (entry.timestamp) {
+      const datePart = entry.timestamp.split(" ")[0]; // Get YYYY-MM-DD
+      dates.add(datePart);
+    }
+  });
+  
+  // Sort dates in descending order (most recent first)
+  const sortedDates = Array.from(dates).sort().reverse();
+  if (sortedDates.length === 0) return 0;
+  
+  const todayStr = new Date().toISOString().split("T")[0];
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split("T")[0];
+  
+  // If the most recent date is neither today nor yesterday, streak is broken
+  const latestDateStr = sortedDates[0];
+  if (latestDateStr !== todayStr && latestDateStr !== yesterdayStr) {
+    return 0;
+  }
+  
+  let currentStreak = 0;
+  let tempDate = new Date(latestDateStr);
+  
+  // Count consecutive days going backwards
+  for (let i = 0; i < sortedDates.length; i++) {
+    const expectedStr = tempDate.toISOString().split("T")[0];
+    if (dates.has(expectedStr)) {
+      currentStreak++;
+      // Move to previous day
+      tempDate.setDate(tempDate.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  
+  return currentStreak;
 }
 
 async function loadHistory() {
   try {
     const entries = await invoke("get_history");
     allHistoryEntries = entries;
+
+    // Calculate actual total words from database
+    let computedTotalWords = 0;
+    entries.forEach(entry => {
+      if (entry.text) {
+        computedTotalWords += entry.text.split(/\s+/).filter(Boolean).length;
+      }
+    });
+    totalWords = computedTotalWords;
+
+    // Calculate actual day streak from database
+    streak = calculateStreakFromHistory(entries);
+
+    // Update the Stats Dashboard
+    updateStatsUI();
+
     filterAndRenderHistory();
   } catch (err) {
     showToast(`Failed to load history: ${err}`, true);

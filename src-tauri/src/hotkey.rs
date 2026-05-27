@@ -24,9 +24,12 @@ static mut SENDER: Option<std::sync::mpsc::Sender<HotkeyEvent>> = None;
 
 // Active trigger key cache updated on saves/loads (avoids slow disk access in hook thread)
 #[cfg(target_os = "windows")]
+#[cfg(target_os = "windows")]
 static TRANSCRIBE_KEY: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("Control".to_string()));
 #[cfg(target_os = "windows")]
 static NOTES_KEY: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("Control + Win".to_string()));
+#[cfg(target_os = "windows")]
+static CANCEL_KEY: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("Escape".to_string()));
 
 // Modifier key tracking states
 #[cfg(target_os = "windows")]
@@ -42,17 +45,106 @@ static WIN_HELD: AtomicBool = AtomicBool::new(false);
 static ACTIVE_RECORDING: Lazy<Mutex<Option<RecordingType>>> = Lazy::new(|| Mutex::new(None));
 
 #[cfg(target_os = "windows")]
-pub fn update_hotkeys(transcribe: &str, notes: &str) {
+pub fn update_hotkeys(transcribe: &str, notes: &str, cancel: &str) {
     if let Ok(mut t) = TRANSCRIBE_KEY.lock() {
         *t = transcribe.to_string();
     }
     if let Ok(mut n) = NOTES_KEY.lock() {
         *n = notes.to_string();
     }
+    if let Ok(mut c) = CANCEL_KEY.lock() {
+        *c = cancel.to_string();
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn get_cancel_vk(key_name: &str) -> u32 {
+    let lower = key_name.to_lowercase();
+    match lower.as_str() {
+        "escape" | "esc" => 0x1B,
+        "backquote" | "`" | "~" => 0xC0,
+        "f1" => 0x70,
+        "f2" => 0x71,
+        "f3" => 0x72,
+        "f4" => 0x73,
+        "f5" => 0x74,
+        "f6" => 0x75,
+        "f7" => 0x76,
+        "f8" => 0x77,
+        "f9" => 0x78,
+        "f10" => 0x79,
+        "f11" => 0x7A,
+        "f12" => 0x7B,
+        "scrolllock" | "scroll lock" => 0x91,
+        "space" => 0x20,
+        "tab" => 0x09,
+        "backspace" => 0x08,
+        "enter" | "return" => 0x0D,
+        "delete" | "del" => 0x2E,
+        "insert" | "ins" => 0x2D,
+        "home" => 0x24,
+        "end" => 0x23,
+        "pageup" | "page up" => 0x21,
+        "pagedown" | "page down" => 0x22,
+        _ => {
+            // Check if it's a single letter or digit
+            if key_name.len() == 1 {
+                let c = key_name.chars().next().unwrap().to_ascii_uppercase();
+                if c >= 'A' && c <= 'Z' {
+                    return c as u32;
+                }
+                if c >= '0' && c <= '9' {
+                    return c as u32;
+                }
+            }
+            0x1B // Default fallback to Escape
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn match_cancel_key(target_cancel: &str, pressed_vk: u32) -> bool {
+    let parts: Vec<&str> = target_cancel.split(" + ").collect();
+    if parts.is_empty() {
+        return false;
+    }
+    
+    // The last part is the base key
+    let base_key = parts.last().cloned().unwrap_or("");
+    let base_vk = get_cancel_vk(base_key);
+    if pressed_vk != base_vk {
+        return false;
+    }
+    
+    // Check if the modifiers match
+    let mut expect_ctrl = false;
+    let mut expect_win = false;
+    let mut expect_shift = false;
+    let mut expect_alt = false;
+    
+    for &part in parts.iter().take(parts.len() - 1) {
+        match part.to_lowercase().as_str() {
+            "control" | "ctrl" => expect_ctrl = true,
+            "win" | "meta" => expect_win = true,
+            "shift" => expect_shift = true,
+            "alt" => expect_alt = true,
+            _ => {}
+        }
+    }
+    
+    let actual_ctrl = CTRL_HELD.load(Ordering::SeqCst);
+    let actual_win = WIN_HELD.load(Ordering::SeqCst);
+    let actual_shift = SHIFT_HELD.load(Ordering::SeqCst);
+    let actual_alt = ALT_HELD.load(Ordering::SeqCst);
+    
+    actual_ctrl == expect_ctrl &&
+    actual_win == expect_win &&
+    actual_shift == expect_shift &&
+    actual_alt == expect_alt
 }
 
 #[cfg(not(target_os = "windows"))]
-pub fn update_hotkeys(_transcribe: &str, _notes: &str) {}
+pub fn update_hotkeys(_transcribe: &str, _notes: &str, _cancel: &str) {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RecordingType {
@@ -65,6 +157,7 @@ pub enum HotkeyEvent {
     Pressed(RecordingType),
     Released(RecordingType),
     Cancelled(RecordingType),
+    GlobalCancel,
 }
 
 #[cfg(target_os = "windows")]
@@ -238,6 +331,14 @@ unsafe extern "system" fn low_level_keyboard_proc(
         } else {
             // Typing an arbitrary regular key
             if is_down {
+                // Check if this key matches the cancel key
+                let target_cancel = if let Ok(c) = CANCEL_KEY.lock() { c.clone() } else { "Escape".to_string() };
+                if match_cancel_key(&target_cancel, vk) {
+                    if let Some(ref tx) = SENDER {
+                        let _ = tx.send(HotkeyEvent::GlobalCancel);
+                    }
+                }
+
                 let mut active = ACTIVE_RECORDING.lock().unwrap();
                 if let Some(rec_type) = *active {
                     // Cancel recording

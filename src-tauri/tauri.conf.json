@@ -16,7 +16,8 @@
         "resizable": true,
         "minWidth": 1080,
         "maxWidth": 1080,
-        "minHeight": 760
+        "minHeight": 760,
+        "decorations": false
       },
       {
         "label": "overlay",
