@@ -46,6 +46,18 @@ pub struct AppConfig {
     pub lm_studio_url: String,
     #[serde(default = "default_lm_studio_model")]
     pub lm_studio_model: String,
+    #[serde(default = "default_transcribe_key")]
+    pub transcribe_key: String,
+    #[serde(default = "default_notes_key")]
+    pub notes_key: String,
+}
+
+fn default_transcribe_key() -> String {
+    "Control".to_string()
+}
+
+fn default_notes_key() -> String {
+    "Control + Win".to_string()
 }
 
 fn default_model() -> String {
@@ -148,6 +160,8 @@ impl AppConfig {
             noise_gate: false,
             lm_studio_url: "http://localhost:1234".to_string(),
             lm_studio_model: "".to_string(),
+            transcribe_key: "Control".to_string(),
+            notes_key: "Control + Win".to_string(),
         }
     }
 

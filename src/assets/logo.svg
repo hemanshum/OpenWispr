@@ -1,26 +1,26 @@
 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <!-- Left Side: White Vertical Lines -->
-  <line x1="24.5" y1="44" x2="24.5" y2="56" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" />
-  <line x1="33" y1="37" x2="33" y2="63" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" />
-  <line x1="41.5" y1="29" x2="41.5" y2="71" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" />
-  <line x1="50" y1="20" x2="50" y2="80" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" />
+  <!-- Left Side: Accent Orange Waveform Lines -->
+  <line x1="24.5" y1="44" x2="24.5" y2="56" stroke="#eb5e28" stroke-width="4.5" stroke-linecap="round" />
+  <line x1="33" y1="37" x2="33" y2="63" stroke="#eb5e28" stroke-width="4.5" stroke-linecap="round" />
+  <line x1="41.5" y1="29" x2="41.5" y2="71" stroke="#eb5e28" stroke-width="4.5" stroke-linecap="round" />
+  <line x1="50" y1="20" x2="50" y2="80" stroke="#eb5e28" stroke-width="4.5" stroke-linecap="round" />
 
-  <!-- Right Side: Semi-Transparent White Horizontal Lines -->
+  <!-- Right Side: Deep Charcoal Text Lines with Opacity -->
   <!-- Row 1 -->
-  <line x1="55.5" y1="30" x2="68" y2="30" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
+  <line x1="55.5" y1="30" x2="68" y2="30" stroke="#292825" stroke-width="4.2" stroke-linecap="round" stroke-opacity="0.7" />
   <!-- Row 2 -->
-  <line x1="55.5" y1="36.6" x2="76" y2="36.6" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
-  <line x1="79.5" y1="36.6" x2="81.5" y2="36.6" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
+  <line x1="55.5" y1="36.6" x2="76" y2="36.6" stroke="#292825" stroke-width="4.2" stroke-linecap="round" stroke-opacity="0.7" />
+  <line x1="79.5" y1="36.6" x2="81.5" y2="36.6" stroke="#292825" stroke-width="4.2" stroke-linecap="round" stroke-opacity="0.7" />
   <!-- Row 3 -->
-  <line x1="55.5" y1="43.3" x2="80" y2="43.3" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
+  <line x1="55.5" y1="43.3" x2="80" y2="43.3" stroke="#292825" stroke-width="4.2" stroke-linecap="round" stroke-opacity="0.7" />
   <!-- Row 4 -->
-  <line x1="55.5" y1="50" x2="69" y2="50" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
-  <line x1="73.5" y1="50" x2="88" y2="50" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
+  <line x1="55.5" y1="50" x2="69" y2="50" stroke="#292825" stroke-width="4.2" stroke-linecap="round" stroke-opacity="0.7" />
+  <line x1="73.5" y1="50" x2="88" y2="50" stroke="#292825" stroke-width="4.2" stroke-linecap="round" stroke-opacity="0.7" />
   <!-- Row 5 -->
-  <line x1="55.5" y1="56.6" x2="82" y2="56.6" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
+  <line x1="55.5" y1="56.6" x2="82" y2="56.6" stroke="#292825" stroke-width="4.2" stroke-linecap="round" stroke-opacity="0.7" />
   <!-- Row 6 -->
-  <line x1="55.5" y1="63.3" x2="73" y2="63.3" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
-  <line x1="77.5" y1="63.3" x2="79.5" y2="63.3" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
+  <line x1="55.5" y1="63.3" x2="73" y2="63.3" stroke="#292825" stroke-width="4.2" stroke-linecap="round" stroke-opacity="0.7" />
+  <line x1="77.5" y1="63.3" x2="79.5" y2="63.3" stroke="#292825" stroke-width="4.2" stroke-linecap="round" stroke-opacity="0.7" />
   <!-- Row 7 -->
-  <line x1="55.5" y1="70" x2="62" y2="70" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
+  <line x1="55.5" y1="70" x2="62" y2="70" stroke="#292825" stroke-width="4.2" stroke-linecap="round" stroke-opacity="0.7" />
 </svg>

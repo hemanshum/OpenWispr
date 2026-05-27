@@ -1,13 +1,13 @@
 #[cfg(target_os = "windows")]
 use std::sync::atomic::{AtomicBool, Ordering};
 #[cfg(target_os = "windows")]
-use std::sync::mpsc;
+use std::sync::{mpsc, Mutex};
 #[cfg(target_os = "windows")]
 use std::thread;
 #[cfg(target_os = "windows")]
-use windows_sys::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
+use once_cell::sync::Lazy;
 #[cfg(target_os = "windows")]
-use windows_sys::Win32::UI::Input::KeyboardAndMouse::{VK_LCONTROL, VK_RCONTROL};
+use windows_sys::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     CallNextHookEx, GetMessageW, PostThreadMessageW, SetWindowsHookExW, UnhookWindowsHookEx,
@@ -21,17 +21,50 @@ static mut HOOK_HANDLE: HHOOK = 0 as HHOOK;
 static mut HOOK_THREAD_ID: u32 = 0;
 #[cfg(target_os = "windows")]
 static mut SENDER: Option<std::sync::mpsc::Sender<HotkeyEvent>> = None;
+
+// Active trigger key cache updated on saves/loads (avoids slow disk access in hook thread)
 #[cfg(target_os = "windows")]
-static KEY_PRESSED: AtomicBool = AtomicBool::new(false);
+static TRANSCRIBE_KEY: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("Control".to_string()));
 #[cfg(target_os = "windows")]
-static CANCELLED: AtomicBool = AtomicBool::new(false);
+static NOTES_KEY: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("Control + Win".to_string()));
+
+// Modifier key tracking states
+#[cfg(target_os = "windows")]
+static CTRL_HELD: AtomicBool = AtomicBool::new(false);
+#[cfg(target_os = "windows")]
+static SHIFT_HELD: AtomicBool = AtomicBool::new(false);
+#[cfg(target_os = "windows")]
+static ALT_HELD: AtomicBool = AtomicBool::new(false);
+#[cfg(target_os = "windows")]
+static WIN_HELD: AtomicBool = AtomicBool::new(false);
+
+#[cfg(target_os = "windows")]
+static ACTIVE_RECORDING: Lazy<Mutex<Option<RecordingType>>> = Lazy::new(|| Mutex::new(None));
+
+#[cfg(target_os = "windows")]
+pub fn update_hotkeys(transcribe: &str, notes: &str) {
+    if let Ok(mut t) = TRANSCRIBE_KEY.lock() {
+        *t = transcribe.to_string();
+    }
+    if let Ok(mut n) = NOTES_KEY.lock() {
+        *n = notes.to_string();
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn update_hotkeys(_transcribe: &str, _notes: &str) {}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum RecordingType {
+    Transcribe,
+    Notes,
+}
 
 #[derive(Debug)]
-#[allow(dead_code)]
 pub enum HotkeyEvent {
-    Pressed,
-    Released,
-    Cancelled,
+    Pressed(RecordingType),
+    Released(RecordingType),
+    Cancelled(RecordingType),
 }
 
 #[cfg(target_os = "windows")]
@@ -101,6 +134,22 @@ impl Drop for HotkeyListener {
 }
 
 #[cfg(target_os = "windows")]
+fn get_current_modifier_string() -> String {
+    let ctrl = CTRL_HELD.load(Ordering::SeqCst);
+    let win = WIN_HELD.load(Ordering::SeqCst);
+    let shift = SHIFT_HELD.load(Ordering::SeqCst);
+    let alt = ALT_HELD.load(Ordering::SeqCst);
+
+    let mut parts = Vec::new();
+    if ctrl { parts.push("Control"); }
+    if win { parts.push("Win"); }
+    if shift { parts.push("Shift"); }
+    if alt { parts.push("Alt"); }
+
+    parts.join(" + ")
+}
+
+#[cfg(target_os = "windows")]
 unsafe extern "system" fn low_level_keyboard_proc(
     n_code: i32,
     w_param: WPARAM,
@@ -116,37 +165,86 @@ unsafe extern "system" fn low_level_keyboard_proc(
         }
 
         let vk = kbd_struct.vkCode;
-        let is_ctrl = vk == VK_LCONTROL as u32 || vk == VK_RCONTROL as u32;
+        
+        let is_ctrl = vk == 0xA2 || vk == 0xA3; // VK_LCONTROL, VK_RCONTROL
+        let is_shift = vk == 0xA0 || vk == 0xA1; // VK_LSHIFT, VK_RSHIFT
+        let is_alt = vk == 0xA4 || vk == 0xA5; // VK_LMENU, VK_RMENU
+        let is_win = vk == 0x5B || vk == 0x5C; // VK_LWIN, VK_RWIN
+        let is_modifier = is_ctrl || is_shift || is_alt || is_win;
 
-        if is_ctrl {
-            let is_down = w_param == WM_KEYDOWN as usize || w_param == WM_SYSKEYDOWN as usize;
-            let is_up = w_param == WM_KEYUP as usize || w_param == WM_SYSKEYUP as usize;
+        let is_down = w_param == WM_KEYDOWN as usize || w_param == WM_SYSKEYDOWN as usize;
+        let is_up = w_param == WM_KEYUP as usize || w_param == WM_SYSKEYUP as usize;
 
+        if is_modifier {
             if is_down {
-                let already_pressed = KEY_PRESSED.swap(true, Ordering::SeqCst);
-                if !already_pressed {
-                    CANCELLED.store(false, Ordering::SeqCst);
-                    if let Some(ref tx) = SENDER {
-                        let _ = tx.send(HotkeyEvent::Pressed);
-                    }
-                }
+                if is_ctrl { CTRL_HELD.store(true, Ordering::SeqCst); }
+                if is_shift { SHIFT_HELD.store(true, Ordering::SeqCst); }
+                if is_alt { ALT_HELD.store(true, Ordering::SeqCst); }
+                if is_win { WIN_HELD.store(true, Ordering::SeqCst); }
             } else if is_up {
-                let was_cancelled = CANCELLED.swap(false, Ordering::SeqCst);
-                KEY_PRESSED.store(false, Ordering::SeqCst);
-                if !was_cancelled {
+                if is_ctrl { CTRL_HELD.store(false, Ordering::SeqCst); }
+                if is_shift { SHIFT_HELD.store(false, Ordering::SeqCst); }
+                if is_alt { ALT_HELD.store(false, Ordering::SeqCst); }
+                if is_win { WIN_HELD.store(false, Ordering::SeqCst); }
+            }
+
+            // Construct current combined held key caps
+            let current_mods = get_current_modifier_string();
+            let target_transcribe = if let Ok(t) = TRANSCRIBE_KEY.lock() { t.clone() } else { "Control".to_string() };
+            let target_notes = if let Ok(n) = NOTES_KEY.lock() { n.clone() } else { "Control + Win".to_string() };
+
+            let matches_notes = current_mods == target_notes;
+            let matches_transcribe = current_mods == target_transcribe;
+
+            let mut active = ACTIVE_RECORDING.lock().unwrap();
+
+            if matches_notes {
+                if *active == None {
+                    *active = Some(RecordingType::Notes);
                     if let Some(ref tx) = SENDER {
-                        let _ = tx.send(HotkeyEvent::Released);
+                        let _ = tx.send(HotkeyEvent::Pressed(RecordingType::Notes));
                     }
+                } else if *active == Some(RecordingType::Transcribe) {
+                    // Transition to Note recording
+                    if let Some(ref tx) = SENDER {
+                        let _ = tx.send(HotkeyEvent::Released(RecordingType::Transcribe));
+                        let _ = tx.send(HotkeyEvent::Pressed(RecordingType::Notes));
+                    }
+                    *active = Some(RecordingType::Notes);
+                }
+            } else if matches_transcribe {
+                if *active == None {
+                    *active = Some(RecordingType::Transcribe);
+                    if let Some(ref tx) = SENDER {
+                        let _ = tx.send(HotkeyEvent::Pressed(RecordingType::Transcribe));
+                    }
+                } else if *active == Some(RecordingType::Notes) {
+                    // Transition to Normal dictation
+                    if let Some(ref tx) = SENDER {
+                        let _ = tx.send(HotkeyEvent::Released(RecordingType::Notes));
+                        let _ = tx.send(HotkeyEvent::Pressed(RecordingType::Transcribe));
+                    }
+                    *active = Some(RecordingType::Transcribe);
+                }
+            } else {
+                // Modified keys combination no longer matches either trigger
+                if let Some(rec_type) = *active {
+                    if let Some(ref tx) = SENDER {
+                        let _ = tx.send(HotkeyEvent::Released(rec_type));
+                    }
+                    *active = None;
                 }
             }
         } else {
-            let is_down = w_param == WM_KEYDOWN as usize || w_param == WM_SYSKEYDOWN as usize;
-            if is_down && KEY_PRESSED.load(Ordering::SeqCst) {
-                let already_cancelled = CANCELLED.swap(true, Ordering::SeqCst);
-                if !already_cancelled {
+            // Typing an arbitrary regular key
+            if is_down {
+                let mut active = ACTIVE_RECORDING.lock().unwrap();
+                if let Some(rec_type) = *active {
+                    // Cancel recording
                     if let Some(ref tx) = SENDER {
-                        let _ = tx.send(HotkeyEvent::Cancelled);
+                        let _ = tx.send(HotkeyEvent::Cancelled(rec_type));
                     }
+                    *active = None;
                 }
             }
         }

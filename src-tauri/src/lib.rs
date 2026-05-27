@@ -14,7 +14,7 @@ use tauri::menu::{MenuBuilder, MenuItemBuilder};
 use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 
 use crate::audio::AudioRecorder;
-use crate::hotkey::{HotkeyEvent, HotkeyListener};
+use crate::hotkey::{HotkeyEvent, HotkeyListener, RecordingType};
 use crate::config::AppConfig;
 use crate::voice_notes::{VoiceNote, create_voice_note, get_voice_notes, get_voice_note, update_voice_note, delete_voice_note, get_audio_file_url};
 
@@ -37,7 +37,9 @@ fn get_app_version() -> String {
 
 #[tauri::command]
 fn load_config(app_handle: AppHandle) -> AppConfig {
-    AppConfig::load(&app_handle)
+    let config = AppConfig::load(&app_handle);
+    crate::hotkey::update_hotkeys(&config.transcribe_key, &config.notes_key);
+    config
 }
 
 #[tauri::command]
@@ -45,6 +47,7 @@ fn save_config(config: AppConfig, app_handle: AppHandle, state: State<'_, AppSta
     if let Ok(recorder) = state.recorder.lock() {
         recorder.noise_gate_enabled.store(config.noise_gate, std::sync::atomic::Ordering::SeqCst);
     }
+    crate::hotkey::update_hotkeys(&config.transcribe_key, &config.notes_key);
     config.save(&app_handle)
 }
 
@@ -77,10 +80,9 @@ fn start_voice_note_recording(state: State<'_, AppState>, app_handle: AppHandle)
     start_recording_internal(&app_handle, &state)
 }
 
-#[tauri::command]
-async fn stop_voice_note_recording(
-    state: State<'_, AppState>,
-    app_handle: AppHandle,
+async fn stop_voice_note_recording_internal(
+    state: &AppState,
+    app_handle: &AppHandle,
     title: String,
 ) -> Result<VoiceNote, String> {
     if !state.is_recording.load(Ordering::SeqCst) {
@@ -104,12 +106,21 @@ async fn stop_voice_note_recording(
     }; // Lock is dropped here
 
     // Transcribe the audio
-    let transcription = transcribe_for_note(&app_handle, &temp_file_str).await?;
+    let transcription = transcribe_for_note(app_handle, &temp_file_str).await?;
 
     // Create the voice note
-    let note = create_voice_note(app_handle, title, transcription, temp_file_str)?;
+    let note = create_voice_note(app_handle.clone(), title, transcription, temp_file_str)?;
 
     Ok(note)
+}
+
+#[tauri::command]
+async fn stop_voice_note_recording(
+    state: State<'_, AppState>,
+    app_handle: AppHandle,
+    title: String,
+) -> Result<VoiceNote, String> {
+    stop_voice_note_recording_internal(&state, &app_handle, title).await
 }
 
 async fn transcribe_for_note(app_handle: &AppHandle, audio_path: &str) -> Result<String, String> {
@@ -626,19 +637,57 @@ pub fn run() {
                 }
             }
 
+            let config = AppConfig::load(&app_handle);
+            crate::hotkey::update_hotkeys(&config.transcribe_key, &config.notes_key);
+
             crate::injector::start_focus_tracker();
 
             let listener = HotkeyListener::start(move |event| {
                 let app_state = app_handle.state::<AppState>();
                 match event {
-                    HotkeyEvent::Pressed => {
-                        let _ = start_recording_internal(&app_handle, &app_state);
+                    HotkeyEvent::Pressed(rec_type) => {
+                        match rec_type {
+                            RecordingType::Transcribe => {
+                                let _ = start_recording_internal(&app_handle, &app_state);
+                            }
+                            RecordingType::Notes => {
+                                let _ = start_recording_internal(&app_handle, &app_state);
+                                let _ = app_handle.emit("note-recording-started-from-hotkey", ());
+                            }
+                        }
                     }
-                    HotkeyEvent::Released => {
-                        let _ = stop_recording_internal(&app_handle, &app_state);
+                    HotkeyEvent::Released(rec_type) => {
+                        match rec_type {
+                            RecordingType::Transcribe => {
+                                let _ = stop_recording_internal(&app_handle, &app_state);
+                            }
+                            RecordingType::Notes => {
+                                let app_handle_clone = app_handle.clone();
+                                tokio::spawn(async move {
+                                    let app_state_clone = app_handle_clone.state::<AppState>();
+                                    let now_str = chrono::Local::now().format("%b %d, %Y %I:%M %p").to_string();
+                                    let title = format!("Quick Note - {}", now_str);
+                                    let _ = app_handle_clone.emit("note-recording-stopping-from-hotkey", ());
+                                    match stop_voice_note_recording_internal(&app_state_clone, &app_handle_clone, title).await {
+                                        Ok(note) => {
+                                            let _ = app_handle_clone.emit("note-recording-completed-from-hotkey", note);
+                                        }
+                                        Err(e) => {
+                                            let _ = app_handle_clone.emit("note-recording-failed-from-hotkey", e);
+                                        }
+                                    }
+                                });
+                            }
+                        }
                     }
-                    HotkeyEvent::Cancelled => {
+                    HotkeyEvent::Cancelled(rec_type) => {
                         let _ = cancel_recording_internal(&app_handle, &app_state);
+                        match rec_type {
+                            RecordingType::Transcribe => {}
+                            RecordingType::Notes => {
+                                let _ = app_handle.emit("note-recording-cancelled-from-hotkey", ());
+                            }
+                        }
                     }
                 }
             });

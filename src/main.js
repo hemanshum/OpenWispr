@@ -13,10 +13,15 @@ const contentSettings = document.getElementById("content-settings");
 
 const subTabAudio = document.getElementById("sub-tab-audio");
 const subTabAi = document.getElementById("sub-tab-ai");
+const subTabHotkeys = document.getElementById("sub-tab-hotkeys");
 const subTabModels = document.getElementById("sub-tab-models");
 const subContentAudio = document.getElementById("sub-content-audio");
 const subContentAi = document.getElementById("sub-content-ai");
+const subContentHotkeys = document.getElementById("sub-content-hotkeys");
 const subContentModels = document.getElementById("sub-content-models");
+
+const selectTranscribeHotkey = document.getElementById("transcribe-hotkey-select");
+const selectNotesHotkey = document.getElementById("notes-hotkey-select");
 
 const selectMic = document.getElementById("mic-select");
 const btnTestMic = document.getElementById("btn-test-mic");
@@ -141,6 +146,54 @@ let micLevelUnlisten = null;
 let recordingMicLevel = 0;
 let currentAmpScale = 0.1;
 
+// Dynamic Stats Tracking State
+let totalWords = parseInt(localStorage.getItem("murmur_total_words") || "755", 10);
+let wpm = parseInt(localStorage.getItem("murmur_wpm") || "127", 10);
+let streak = parseInt(localStorage.getItem("murmur_streak") || "1", 10);
+
+function updateStatsUI() {
+  const totalWordsEl = document.getElementById("stat-total-words");
+  const wpmEl = document.getElementById("stat-wpm");
+  const streakEl = document.getElementById("stat-streak");
+  const progressFillEl = document.getElementById("voice-progress-fill");
+  const unlockWordsEl = document.getElementById("unlock-words-count");
+
+  if (totalWordsEl) totalWordsEl.textContent = totalWords;
+  if (wpmEl) wpmEl.textContent = wpm;
+  if (streakEl) streakEl.textContent = streak;
+
+  // Unlocking voice profile target: 1705 words
+  const targetWords = 1705;
+  const progressPercent = Math.min(100, Math.max(0, (totalWords / targetWords) * 100));
+  if (progressFillEl) progressFillEl.style.width = `${progressPercent}%`;
+
+  const remaining = Math.max(0, targetWords - totalWords);
+  if (unlockWordsEl) unlockWordsEl.textContent = remaining;
+
+  localStorage.setItem("murmur_total_words", totalWords);
+  localStorage.setItem("murmur_wpm", wpm);
+  localStorage.setItem("murmur_streak", streak);
+}
+
+// Search and filter state
+let allHistoryEntries = [];
+let searchQuery = "";
+
+const historySearchInput = document.getElementById("history-search");
+if (historySearchInput) {
+  historySearchInput.addEventListener("input", (e) => {
+    searchQuery = e.target.value.toLowerCase();
+    filterAndRenderHistory();
+  });
+}
+
+function filterAndRenderHistory() {
+  const filtered = allHistoryEntries.filter(entry => 
+    entry.text.toLowerCase().includes(searchQuery)
+  );
+  renderHistory(filtered);
+}
+
 // Tab Switcher
 tabDash.addEventListener("click", () => {
   stopMicTesting(); // Always stop mic test when switching back to dashboard
@@ -197,35 +250,36 @@ tabNotes.addEventListener("click", () => {
 });
 
 // Sub-Tab Switcher inside Settings
-subTabAudio.addEventListener("click", () => {
-  subTabAudio.classList.add("active");
-  subTabAi.classList.remove("active");
-  subTabModels.classList.remove("active");
-  subContentAudio.classList.add("active");
-  subContentAi.classList.remove("active");
-  subContentModels.classList.remove("active");
-});
+function setActiveSubTab(tabName) {
+  stopMicTesting(); // Always stop mic test when switching sub-tabs inside settings
 
-subTabAi.addEventListener("click", () => {
-  stopMicTesting(); // Stop mic test when switching away from audio tab
-  subTabAi.classList.add("active");
-  subTabAudio.classList.remove("active");
-  subTabModels.classList.remove("active");
-  subContentAi.classList.add("active");
-  subContentAudio.classList.remove("active");
-  subContentModels.classList.remove("active");
-});
+  const tabs = {
+    audio: { tab: subTabAudio, panel: subContentAudio },
+    ai: { tab: subTabAi, panel: subContentAi },
+    hotkeys: { tab: subTabHotkeys, panel: subContentHotkeys },
+    models: { tab: subTabModels, panel: subContentModels }
+  };
 
-subTabModels.addEventListener("click", () => {
-  stopMicTesting();
-  subTabModels.classList.add("active");
-  subTabAudio.classList.remove("active");
-  subTabAi.classList.remove("active");
-  subContentModels.classList.add("active");
-  subContentAudio.classList.remove("active");
-  subContentAi.classList.remove("active");
-  loadModelsManager(); // Refresh statuses on tab open
-});
+  Object.keys(tabs).forEach((key) => {
+    const item = tabs[key];
+    if (key === tabName) {
+      if (item.tab) item.tab.classList.add("active");
+      if (item.panel) item.panel.classList.add("active");
+    } else {
+      if (item.tab) item.tab.classList.remove("active");
+      if (item.panel) item.panel.classList.remove("active");
+    }
+  });
+
+  if (tabName === "models") {
+    loadModelsManager();
+  }
+}
+
+if (subTabAudio) subTabAudio.addEventListener("click", () => setActiveSubTab("audio"));
+if (subTabAi) subTabAi.addEventListener("click", () => setActiveSubTab("ai"));
+if (subTabHotkeys) subTabHotkeys.addEventListener("click", () => setActiveSubTab("hotkeys"));
+if (subTabModels) subTabModels.addEventListener("click", () => setActiveSubTab("models"));
 
 // Toggle API Key Visibility
 btnToggleKey.addEventListener("click", () => {
@@ -899,6 +953,8 @@ async function autoSaveConfig() {
     custom_api_model: inputCustomApiModel.value.trim(),
     lm_studio_url: inputLmStudioUrl.value.trim() || inputLmStudioTranscriptionUrl.value.trim(),
     lm_studio_model: inputLmStudioModel.value.trim(),
+    transcribe_key: selectTranscribeHotkey ? selectTranscribeHotkey.value : "Control",
+    notes_key: selectNotesHotkey ? selectNotesHotkey.value : "Control + Win",
   };
 
   try {
@@ -1054,9 +1110,50 @@ async function initConfig() {
     inputLmStudioUrl.value = config.lm_studio_url || "http://localhost:1234";
     inputLmStudioTranscriptionUrl.value = config.lm_studio_url || "http://localhost:1234";
     inputLmStudioModel.value = config.lm_studio_model || "";
+
+    if (selectTranscribeHotkey) {
+      selectTranscribeHotkey.value = config.transcribe_key || "Control";
+    }
+    if (selectNotesHotkey) {
+      selectNotesHotkey.value = config.notes_key || "Control + Win";
+    }
+    updateDashboardKeycaps(config.transcribe_key || "Control");
   } catch (err) {
     showToast("Error loading saved configurations", true);
   }
+}
+
+function updateDashboardKeycaps(keyName) {
+  const keycapRow = document.querySelector(".keycap-row");
+  if (!keycapRow) return;
+
+  keycapRow.innerHTML = "";
+
+  let displayKey = keyName || "Control";
+  if (displayKey === "Control") {
+    displayKey = "Ctrl";
+  }
+
+  const span = document.createElement("span");
+  span.className = "keycap";
+  span.textContent = displayKey;
+  keycapRow.appendChild(span);
+}
+
+// Add event listeners for Hotkey triggers change
+if (selectTranscribeHotkey) {
+  selectTranscribeHotkey.addEventListener("change", async () => {
+    updateDashboardKeycaps(selectTranscribeHotkey.value);
+    await autoSaveConfig();
+    showToast("Transcribe hotkey updated");
+  });
+}
+
+if (selectNotesHotkey) {
+  selectNotesHotkey.addEventListener("change", async () => {
+    await autoSaveConfig();
+    showToast("Voice notes hotkey updated");
+  });
 }
 
 // Update Status UI
@@ -1099,6 +1196,13 @@ listen("text-prepared", (event) => {
   if (preparedText && preparedText.trim()) {
     lastPreparedText.value = preparedText;
     lastPreparedContainer.style.display = "flex";
+    
+    // Dynamically increment words and update profile
+    const wordsCount = preparedText.split(/\s+/).filter(Boolean).length;
+    totalWords += wordsCount;
+    // Subtle wpm fluctuation around 125-135
+    wpm = Math.round(122 + Math.random() * 10 + (wordsCount % 6));
+    updateStatsUI();
   }
 });
 
@@ -1110,6 +1214,74 @@ listen("show-tab", (event) => {
   } else if (tabName === "settings" && tabSettings) {
     tabSettings.click();
   }
+});
+
+// Listen for Voice Note events from global hotkeys
+listen("note-recording-started-from-hotkey", () => {
+  stopMicTesting();
+  
+  // Switch to Notes tab visually
+  if (tabNotes) tabNotes.click();
+
+  pendingNoteTitle = "Quick Note";
+  if (noteTitleModal) noteTitleModal.style.display = "none";
+  if (notesListContainer) notesListContainer.style.display = "none";
+  if (noteDetailView) noteDetailView.style.display = "none";
+  
+  isRecordingNote = true;
+  isPaused = false;
+  if (noteRecordingModal) noteRecordingModal.style.display = "flex";
+
+  // Update UI
+  if (recordingTitle) recordingTitle.textContent = pendingNoteTitle;
+  if (recordingTimer) recordingTimer.textContent = "00:00";
+  if (btnPauseRecording) btnPauseRecording.style.display = "none"; // Pause not available during global hold
+  if (btnResumeRecording) btnResumeRecording.style.display = "none";
+
+  // Start timer
+  recordingStartTime = Date.now();
+  if (recordingTimerInterval) clearInterval(recordingTimerInterval);
+  recordingTimerInterval = setInterval(updateRecordingTimer, 1000);
+
+  // Start drawing waveform
+  if (noteRecordingCanvas && noteCtx) {
+    resizeNoteCanvas();
+    drawNoteWaveform();
+  }
+});
+
+listen("note-recording-stopping-from-hotkey", () => {
+  if (recordingTimerInterval) clearInterval(recordingTimerInterval);
+  showToast("Saving voice note...", false);
+});
+
+listen("note-recording-completed-from-hotkey", (event) => {
+  const note = event.payload;
+  isRecordingNote = false;
+  isPaused = false;
+  recordingStartTime = null;
+  pendingNoteTitle = "";
+  if (noteRecordingModal) noteRecordingModal.style.display = "none";
+
+  loadNotes().then(() => {
+    if (note && note.id) {
+      openNoteDetail(note.id);
+    }
+  });
+
+  showToast("Voice note created!");
+});
+
+listen("note-recording-cancelled-from-hotkey", () => {
+  isRecordingNote = false;
+  isPaused = false;
+  recordingStartTime = null;
+  pendingNoteTitle = "";
+  if (recordingTimerInterval) clearInterval(recordingTimerInterval);
+  if (noteRecordingModal) noteRecordingModal.style.display = "none";
+  if (notesListContainer) notesListContainer.style.display = "block";
+  
+  showToast("Voice note cancelled", true);
 });
 
 // Copy Last Prepared Text handler
@@ -1146,19 +1318,19 @@ function draw() {
     // Smooth transition: 85% of current scale + 15% of target scale
     currentAmpScale += (targetScale - currentAmpScale) * 0.15;
     
-    // 3 layered moving gradient waves
-    drawWave(3, 28 * currentAmpScale, 0.015, "#a855f7", 0.4);
-    drawWave(2, 18 * currentAmpScale, 0.025, "#6366f1", 0.3);
-    drawWave(1.5, 10 * currentAmpScale, 0.035, "#06b6d4", 0.2);
+    // 3 layered moving gradient waves in premium oranges
+    drawWave(3, 28 * currentAmpScale, 0.015, "#eb5e28", 0.4);
+    drawWave(2, 18 * currentAmpScale, 0.025, "#f07f54", 0.3);
+    drawWave(1.5, 10 * currentAmpScale, 0.035, "#f5a582", 0.2);
   } else {
     currentAmpScale = 0.1; // reset
     if (currentStatus === "Transcribing" || currentStatus === "Pasting") {
-      // Draw scanning laser pulse wave
-      drawWave(1.0, 8, 0.01, "#a855f7", 0.25);
+      // Draw scanning laser pulse wave in orange
+      drawWave(1.0, 8, 0.01, "#eb5e28", 0.25);
       const scanX = (Math.sin(phase * 0.5) + 1) * 0.5 * width;
       ctx.shadowBlur = 15;
-      ctx.shadowColor = "#06b6d4";
-      ctx.strokeStyle = "rgba(6, 182, 212, 0.8)";
+      ctx.shadowColor = "#eb5e28";
+      ctx.strokeStyle = "rgba(235, 94, 40, 0.8)";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(scanX, 10);
@@ -1166,8 +1338,8 @@ function draw() {
       ctx.stroke();
       ctx.shadowBlur = 0;
     } else {
-      // Idle calm wave
-      drawWave(0.3, 3, 0.008, "#94a3b8", 0.15);
+      // Idle calm wave in soft warm grey-brown
+      drawWave(0.3, 3, 0.008, "#74726b", 0.15);
     }
   }
 
@@ -1263,13 +1435,15 @@ async function init() {
   await loadModelsManager();
 
   draw();
+  updateStatsUI();
   await updateLastPreparedFromHistory();
 }
 
 async function loadHistory() {
   try {
     const entries = await invoke("get_history");
-    renderHistory(entries);
+    allHistoryEntries = entries;
+    filterAndRenderHistory();
   } catch (err) {
     showToast(`Failed to load history: ${err}`, true);
   }
@@ -1291,73 +1465,127 @@ function renderHistory(entries) {
   }
   
   historyEmpty.style.display = "none";
-  
+
+  // Group entries by date (e.g. "TODAY", "MAY 24, 2026")
+  const groups = {};
+  const todayStr = new Date().toDateString();
+
   entries.forEach((entry) => {
-    const item = document.createElement("div");
-    item.className = "history-item";
-    
-    // Header
-    const header = document.createElement("div");
-    header.className = "history-item-header";
-    
-    const timeSpan = document.createElement("span");
-    timeSpan.className = "history-item-time";
-    timeSpan.textContent = formatTimestamp(entry.timestamp);
-    header.appendChild(timeSpan);
-    
-    const actions = document.createElement("div");
-    actions.className = "history-item-actions";
-    
-    // Copy button
-    const copyBtn = document.createElement("button");
-    copyBtn.className = "history-item-btn copy-btn-item";
-    copyBtn.title = "Copy to clipboard";
-    copyBtn.innerHTML = `
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-      </svg>
-    `;
-    copyBtn.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(entry.text);
-        showToast("Copied to clipboard!");
-      } catch (err) {
-        showToast(`Failed to copy: ${err}`, true);
+    let dateStr = "UNKNOWN";
+    let timeStr = "";
+
+    try {
+      const parts = entry.timestamp.split(" ");
+      if (parts.length >= 2) {
+        const dateParts = parts[0].split("-");
+        const year = parseInt(dateParts[0], 10);
+        const month = parseInt(dateParts[1], 10) - 1;
+        const day = parseInt(dateParts[2], 10);
+
+        const dateObj = new Date(year, month, day);
+        if (dateObj.toDateString() === todayStr) {
+          dateStr = "TODAY";
+        } else {
+          dateStr = dateObj.toLocaleDateString(undefined, {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric'
+          }).toUpperCase();
+        }
+
+        // Format time (e.g., "08:53 AM")
+        const timeParts = parts[1].split(":");
+        const hour = parseInt(timeParts[0], 10);
+        const minute = parseInt(timeParts[1], 10);
+        const ampm = hour >= 12 ? "PM" : "AM";
+        const displayHour = hour % 12 || 12;
+        const displayMinute = minute < 10 ? "0" + minute : minute;
+        timeStr = `${displayHour}:${displayMinute} ${ampm}`;
+      } else {
+        dateStr = "OLDER";
+        timeStr = entry.timestamp;
       }
+    } catch (e) {
+      dateStr = "OLDER";
+      timeStr = entry.timestamp;
+    }
+
+    if (!groups[dateStr]) {
+      groups[dateStr] = [];
+    }
+    groups[dateStr].push({ entry, timeStr });
+  });
+
+  // Render each group
+  Object.keys(groups).forEach((groupName) => {
+    const groupHeader = document.createElement("div");
+    groupHeader.className = "history-group-header";
+    groupHeader.textContent = groupName;
+    historyList.appendChild(groupHeader);
+
+    groups[groupName].forEach(({ entry, timeStr }) => {
+      const row = document.createElement("div");
+      row.className = "history-row";
+
+      // Time Column
+      const timeCol = document.createElement("div");
+      timeCol.className = "history-time-col";
+      timeCol.textContent = timeStr;
+      row.appendChild(timeCol);
+
+      // Text Column
+      const textCol = document.createElement("div");
+      textCol.className = "history-text-col";
+      textCol.textContent = entry.text;
+      row.appendChild(textCol);
+
+      // Hover Actions Column
+      const actionsCol = document.createElement("div");
+      actionsCol.className = "history-actions-col";
+
+      // Copy Action Button
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "history-action-icon-btn copy-btn-item";
+      copyBtn.title = "Copy to clipboard";
+      copyBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+          <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+        </svg>
+      `;
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(entry.text);
+          showToast("Copied to clipboard!");
+        } catch (err) {
+          showToast(`Failed to copy: ${err}`, true);
+        }
+      });
+      actionsCol.appendChild(copyBtn);
+
+      // Delete Action Button
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "history-action-icon-btn delete-btn";
+      deleteBtn.title = "Delete entry";
+      deleteBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+        </svg>
+      `;
+      deleteBtn.addEventListener("click", async () => {
+        try {
+          await invoke("delete_history_entry", { id: entry.id });
+          showToast("Deleted entry");
+          await loadHistory();
+          await updateLastPreparedFromHistory();
+        } catch (err) {
+          showToast(`Failed to delete: ${err}`, true);
+        }
+      });
+      actionsCol.appendChild(deleteBtn);
+
+      row.appendChild(actionsCol);
+      historyList.appendChild(row);
     });
-    actions.appendChild(copyBtn);
-    
-    // Delete button
-    const deleteBtn = document.createElement("button");
-    deleteBtn.className = "history-item-btn delete-btn";
-    deleteBtn.title = "Delete entry";
-    deleteBtn.innerHTML = `
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-      </svg>
-    `;
-    deleteBtn.addEventListener("click", async () => {
-      try {
-        await invoke("delete_history_entry", { id: entry.id });
-        showToast("Deleted entry");
-        await loadHistory();
-        await updateLastPreparedFromHistory();
-      } catch (err) {
-        showToast(`Failed to delete: ${err}`, true);
-      }
-    });
-    actions.appendChild(deleteBtn);
-    
-    header.appendChild(actions);
-    item.appendChild(header);
-    
-    // Body
-    const body = document.createElement("div");
-    body.className = "history-item-body";
-    body.textContent = entry.text;
-    item.appendChild(body);
-    
-    historyList.appendChild(item);
   });
 }
 

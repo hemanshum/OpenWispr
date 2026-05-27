@@ -9,761 +9,771 @@
   </head>
   <body>
     <div class="window-frame">
-      <!-- Header / Tabs Navigation -->
-      <header class="header">
-        <div class="brand">
-          <div class="brand-logo">
-            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">
-              <!-- Left Side: White Vertical Lines -->
-              <line x1="24.5" y1="44" x2="24.5" y2="56" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" />
-              <line x1="33" y1="37" x2="33" y2="63" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" />
-              <line x1="41.5" y1="29" x2="41.5" y2="71" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" />
-              <line x1="50" y1="20" x2="50" y2="80" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" />
-
-              <!-- Right Side: Semi-Transparent White Horizontal Lines -->
-              <line x1="55.5" y1="30" x2="68" y2="30" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
-              <line x1="55.5" y1="36.6" x2="76" y2="36.6" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
-              <line x1="79.5" y1="36.6" x2="81.5" y2="36.6" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
-              <line x1="55.5" y1="43.3" x2="80" y2="43.3" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
-              <line x1="55.5" y1="50" x2="69" y2="50" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
-              <line x1="73.5" y1="50" x2="88" y2="50" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
-              <line x1="55.5" y1="56.6" x2="82" y2="56.6" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
-              <line x1="55.5" y1="63.3" x2="73" y2="63.3" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
-              <line x1="77.5" y1="63.3" x2="79.5" y2="63.3" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
-              <line x1="55.5" y1="70" x2="62" y2="70" stroke="rgba(255, 255, 255, 0.65)" stroke-width="4.2" stroke-linecap="round" />
-            </svg>
-          </div>
-          <span class="brand-name">Murmur</span>
-          <span class="brand-version" id="brand-version">v0.1.0</span>
+      <!-- Window Title Bar Decoration -->
+      <div class="window-header">
+        <div class="window-brand-badge">
+          <svg class="brand-logo-svg header-logo" viewBox="0 0 100 100" width="16" height="16">
+            <line x1="24.5" y1="44" x2="24.5" y2="56" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-left-line" />
+            <line x1="33" y1="37" x2="33" y2="63" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-left-line" />
+            <line x1="41.5" y1="29" x2="41.5" y2="71" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-left-line" />
+            <line x1="50" y1="20" x2="50" y2="80" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-left-line" />
+            <line x1="55.5" y1="30" x2="68" y2="30" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" class="logo-right-line" />
+            <line x1="55.5" y1="36.6" x2="76" y2="36.6" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" class="logo-right-line" />
+            <line x1="79.5" y1="36.6" x2="81.5" y2="36.6" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" class="logo-right-line" />
+            <line x1="55.5" y1="43.3" x2="80" y2="43.3" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" class="logo-right-line" />
+            <line x1="55.5" y1="50" x2="69" y2="50" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" class="logo-right-line" />
+            <line x1="73.5" y1="50" x2="88" y2="50" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" class="logo-right-line" />
+            <line x1="55.5" y1="56.6" x2="82" y2="56.6" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" class="logo-right-line" />
+            <line x1="55.5" y1="63.3" x2="73" y2="63.3" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" class="logo-right-line" />
+            <line x1="77.5" y1="63.3" x2="79.5" y2="63.3" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" class="logo-right-line" />
+            <line x1="55.5" y1="70" x2="62" y2="70" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" class="logo-right-line" />
+          </svg>
+          <span class="brand-text">Murmur</span>
+          <span class="brand-version" id="brand-version">v0.2.0</span>
         </div>
-        <nav class="nav-tabs">
-          <button class="tab-btn active" id="tab-dash">Dashboard</button>
-          <button class="tab-btn" id="tab-history">History</button>
-          <button class="tab-btn" id="tab-notes">Notes</button>
-          <button class="tab-btn" id="tab-settings">Settings</button>
-        </nav>
-      </header>
+        <div class="window-dots">
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+          <span class="dot dot-red"></span>
+        </div>
+      </div>
 
-      <!-- Content Container -->
-      <div class="content-container">
-        <!-- Dashboard Tab -->
-        <section class="tab-content active" id="content-dash">
-          <div class="dashboard-view">
-            <div class="status-section">
-              <div class="status-pill" id="status-badge">
-                <span class="indicator-dot"></span>
-                <span class="status-text" id="status-label">Idle</span>
-              </div>
-            </div>
-
-            <!-- Waveform Canvas Visualizer -->
-            <div class="visualizer-container">
-              <canvas class="visualizer-canvas" id="canvas-visualizer"></canvas>
-              <button class="mic-trigger" id="btn-record">
-                <svg viewBox="0 0 24 24">
-                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
-                </svg>
-              </button>
-            </div>
-
-            <!-- Dashboard Controls Card -->
-            <div class="dashboard-controls-card">
-              <div class="dashboard-control-header">
-                <div class="dashboard-control-title">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="2" y1="12" x2="22" y2="12"></line>
-                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                  </svg>
-                  <span>Quick Controls</span>
-                </div>
-              </div>
-              <div class="dashboard-control-body">
-                <div class="dashboard-control-row">
-                  <span class="dashboard-control-label">Spoken Language:</span>
-                  <select id="dashboard-language-select" class="dashboard-select">
-                    <option value="auto">Auto-detect Language</option>
-                    <option value="en">English</option>
-                    <option value="hi">Hindi</option>
-                    <option value="es">Spanish</option>
-                    <option value="fr">French</option>
-                    <option value="de">German</option>
-                    <option value="it">Italian</option>
-                    <option value="pt">Portuguese</option>
-                    <option value="zh">Chinese</option>
-                    <option value="ja">Japanese</option>
-                    <option value="ko">Korean</option>
-                    <option value="ru">Russian</option>
-                  </select>
-                </div>
-                <div class="dashboard-preset-selector">
-                  <span class="dashboard-preset-badge" data-prompt="Transcribe and clean up the audio. Remove filler words and format appropriately.">Default</span>
-                  <span class="dashboard-preset-badge" data-prompt="Transcribe and format as a clear, professional email draft. Maintain formal language.">Professional Email</span>
-                  <span class="dashboard-preset-badge" data-prompt="Transcribe and format as software engineering documentation or clean notes. Format code blocks if any.">Developer Notes</span>
-                  <span class="dashboard-preset-badge" data-prompt="Transcribe verbatim. Do not change any words, keep all filler sounds as text.">Verbatim Transcript</span>
-                  <span class="dashboard-preset-badge" data-prompt="Act as a prompt engineering assistant. Refine and optimize the transcribed input into a clear, structured, and effective LLM prompt.">Prompt Engineer</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Help Tip card -->
-            <div class="instruction-card">
-              <div class="keycap" id="trigger-keycap">CTRL</div>
-              <div class="instruction-text">
-                Hold the trigger key down to <strong>record voice</strong>. Release the key to transcribe, clean, and <strong>paste text</strong> instantly.
-              </div>
-            </div>
-
-            <!-- Last Prepared Text Card -->
-            <div class="last-prepared-card" id="last-prepared-container" style="display: none;">
-              <div class="last-prepared-header">
-                <span class="last-prepared-title">Last Prepared Text</span>
-                <button class="copy-btn" id="btn-copy-last" title="Copy to Clipboard">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-                  </svg>
-                  <span>Copy</span>
-                </button>
-              </div>
-              <div class="last-prepared-body">
-                <textarea id="last-prepared-text" readonly placeholder="Your transcribed text will appear here..."></textarea>
-              </div>
-            </div>
+      <!-- App Core Body -->
+      <div class="app-body">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+          <div class="sidebar-brand-title">
+            <svg class="brand-logo-svg sidebar-logo" viewBox="0 0 100 100" width="22" height="22">
+              <line x1="24.5" y1="44" x2="24.5" y2="56" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" class="logo-left-line" />
+              <line x1="33" y1="37" x2="33" y2="63" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" class="logo-left-line" />
+              <line x1="41.5" y1="29" x2="41.5" y2="71" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" class="logo-left-line" />
+              <line x1="50" y1="20" x2="50" y2="80" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" class="logo-left-line" />
+              <line x1="55.5" y1="30" x2="68" y2="30" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-right-line" />
+              <line x1="55.5" y1="36.6" x2="76" y2="36.6" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-right-line" />
+              <line x1="79.5" y1="36.6" x2="81.5" y2="36.6" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-right-line" />
+              <line x1="55.5" y1="43.3" x2="80" y2="43.3" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-right-line" />
+              <line x1="55.5" y1="50" x2="69" y2="50" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-right-line" />
+              <line x1="73.5" y1="50" x2="88" y2="50" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-right-line" />
+              <line x1="55.5" y1="56.6" x2="82" y2="56.6" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-right-line" />
+              <line x1="55.5" y1="63.3" x2="73" y2="63.3" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-right-line" />
+              <line x1="77.5" y1="63.3" x2="79.5" y2="63.3" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-right-line" />
+              <line x1="55.5" y1="70" x2="62" y2="70" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-right-line" />
+            </svg>
+            <span>Murmur</span>
           </div>
-        </section>
+          <nav class="sidebar-menu">
+            <button class="menu-item active" id="tab-dash">
+              <svg class="menu-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+              <span>Home</span>
+            </button>
+            <button class="menu-item" id="tab-history">
+              <svg class="menu-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span>History</span>
+            </button>
+            <button class="menu-item" id="tab-notes">
+              <svg class="menu-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v4M8 23h8"></path>
+              </svg>
+              <span>Notes</span>
+            </button>
+            <button class="menu-item" id="tab-settings">
+              <svg class="menu-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+              <span>Settings</span>
+            </button>
+          </nav>
+        </aside>
 
-        <!-- History Tab -->
-        <section class="tab-content" id="content-history">
-          <div class="history-view">
-            <div class="history-header">
-              <div class="history-title-row">
-                <span class="history-title">Dictation History</span>
-                <span class="history-count-badge" id="history-count">0 entries</span>
-              </div>
-              <button class="clear-all-btn" id="btn-clear-history" title="Clear all history">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                </svg>
-                <span>Clear All</span>
-              </button>
-            </div>
-            
-            <div class="history-list-container">
-              <div class="history-empty-state" id="history-empty">
-                <div class="empty-icon">📂</div>
-                <div class="empty-title">No dictation history</div>
-                <div class="empty-subtitle">Your transcribed texts will be saved here automatically.</div>
-              </div>
-              <div class="history-list" id="history-list">
-                <!-- Dynamically populated -->
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Notes Tab -->
-        <section class="tab-content" id="content-notes">
-          <div class="notes-view">
-            <div class="notes-header">
-              <div class="notes-title-row">
-                <span class="notes-title">Voice Notes</span>
-                <span class="notes-count-badge" id="notes-count">0 notes</span>
-              </div>
-              <button class="new-note-btn" id="btn-new-note" title="Create new voice note">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
-                </svg>
-                <span>New Note</span>
-              </button>
-            </div>
-
-            <!-- Title Input Modal -->
-            <div class="note-title-modal" id="note-title-modal" style="display: none;">
-              <div class="modal-content">
-                <h3>New Voice Note</h3>
-                <div class="form-group" style="margin: 24px 0;">
-                  <label class="form-label" for="new-note-title">Note Title</label>
-                  <input
-                    type="text"
-                    id="new-note-title"
-                    class="form-input"
-                    placeholder="Enter a name for your note..."
-                    style="text-align: center; font-size: 1.1rem;"
-                  />
+        <!-- Content Container -->
+        <main class="content-container">
+          <!-- Home/Dashboard Tab -->
+          <section class="tab-content active" id="content-dash">
+            <div class="dashboard-layout">
+              <!-- Center main column -->
+              <div class="dashboard-main-col">
+                <!-- Status Badge -->
+                <div class="status-section">
+                  <div class="status-pill" id="status-badge">
+                    <span class="indicator-dot"></span>
+                    <span class="status-text" id="status-label">Idle</span>
+                  </div>
                 </div>
-                <div class="modal-buttons">
-                  <button class="cancel-btn" id="btn-cancel-title">Cancel</button>
-                  <button class="start-recording-btn" id="btn-start-recording">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+
+                <!-- Circular Mic Trigger and Visualizer Waveform -->
+                <div class="visualizer-container">
+                  <canvas class="visualizer-canvas" id="canvas-visualizer"></canvas>
+                  <button class="mic-trigger" id="btn-record" title="Click to dictation">
+                    <svg class="mic-icon-svg" viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
                       <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
                     </svg>
-                    Start Recording
                   </button>
+                </div>
+
+                <!-- Help Tip & Description -->
+                <div class="instruction-text-center">
+                  Hold the trigger key down to <strong class="highlight-bold">record voice</strong>. Release the key to transcribe, clean, and <strong class="highlight-bold">paste text</strong> instantly.
+                </div>
+
+                <!-- Custom Keyboard Keys cap representation -->
+                <div class="keycap-row">
+                  <span class="keycap">Ctrl</span>
+                  <span class="keycap-separator">+</span>
+                  <span class="keycap">Win</span>
+                </div>
+
+                <!-- Quick Controls Card -->
+                <div class="card-item quick-controls-card">
+                  <div class="card-header-label">QUICK CONTROLS</div>
+                  
+                  <div class="spoken-language-row">
+                    <span class="spoken-label">Spoken Language:</span>
+                    <div class="select-wrapper">
+                      <select id="dashboard-language-select" class="clean-select">
+                        <option value="auto">Auto-detect Language</option>
+                        <option value="en">English</option>
+                        <option value="hi">Hindi</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="zh">Chinese</option>
+                        <option value="ja">Japanese</option>
+                        <option value="ko">Korean</option>
+                        <option value="ru">Russian</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="dashboard-preset-selector">
+                    <span class="dashboard-preset-badge" data-prompt="Transcribe and clean up the audio. Remove filler words and format appropriately.">Default</span>
+                    <span class="dashboard-preset-badge" data-prompt="Transcribe and format as a clear, professional email draft. Maintain formal language.">Professional Email</span>
+                    <span class="dashboard-preset-badge" data-prompt="Transcribe and format as software engineering documentation or clean notes. Format code blocks if any.">Developer Notes</span>
+                    <span class="dashboard-preset-badge" data-prompt="Transcribe verbatim. Do not change any words, keep all filler sounds as text.">Verbatim Transcript</span>
+                    <span class="dashboard-preset-badge" data-prompt="Act as a prompt engineering assistant. Refine and optimize the transcribed input into a clear, structured, and effective LLM prompt.">Prompt Engineer</span>
+                  </div>
+                </div>
+
+                <!-- Last Prepared Text Card -->
+                <div class="card-item last-prepared-card" id="last-prepared-container" style="display: none;">
+                  <div class="last-prepared-header-row">
+                    <span class="last-prepared-title">LAST PREPARED TEXT</span>
+                    <button class="clean-copy-btn" id="btn-copy-last">Copy</button>
+                  </div>
+                  <div class="last-prepared-body-text">
+                    <textarea id="last-prepared-text" readonly placeholder="Your transcribed text will appear here..."></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right sidebar column -->
+              <div class="dashboard-stats-col">
+                <!-- Stats card widget -->
+                <div class="card-item stats-card">
+                  <div class="stat-entry">
+                    <span class="stat-num" id="stat-total-words">755</span>
+                    <span class="stat-label">total words</span>
+                  </div>
+                  <div class="stat-entry">
+                    <span class="stat-num" id="stat-wpm">127</span>
+                    <span class="stat-label">wpm</span>
+                  </div>
+                  <div class="stat-entry">
+                    <span class="stat-num" id="stat-streak">1</span>
+                    <span class="stat-label">day streak</span>
+                  </div>
+                </div>
+
+                <!-- Voice profile card widget -->
+                <div class="card-item voice-profile-card">
+                  <div class="voice-title">Your Voice Profile</div>
+                  <div class="voice-subtitle">Discover how you use your voice.</div>
+                  <div class="voice-progress-track">
+                    <div class="voice-progress-fill" id="voice-progress-fill" style="width: 28%;"></div>
+                  </div>
+                  <div class="voice-unlock-label">Unlocks in <span id="unlock-words-count">950</span> words</div>
                 </div>
               </div>
             </div>
+          </section>
 
-            <!-- Recording Modal -->
-            <div class="note-recording-modal" id="note-recording-modal" style="display: none;">
-              <div class="modal-content">
-                <h3 id="recording-title">Recording...</h3>
-                <div class="recording-visualizer">
-                  <canvas id="note-recording-canvas"></canvas>
+          <!-- History Tab -->
+          <section class="tab-content" id="content-history">
+            <div class="history-layout">
+              <div class="history-top-row">
+                <h2 class="section-title">History</h2>
+                <div class="history-actions">
+                  <input type="text" id="history-search" class="history-search-input" placeholder="Search transcripts..." />
+                  <button class="clear-all-btn" id="btn-clear-history">Clear All</button>
                 </div>
-                <div class="recording-timer" id="recording-timer">00:00</div>
-                <div class="recording-controls">
-                  <button class="pause-recording-btn" id="btn-pause-recording" title="Pause">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+              </div>
+
+              <!-- History List white card layout -->
+              <div class="card-item history-main-card">
+                <div class="history-empty-state" id="history-empty">
+                  <div class="empty-icon">📂</div>
+                  <div class="empty-title">No dictation history</div>
+                  <div class="empty-subtitle">Your transcribed texts will be saved here automatically.</div>
+                </div>
+                <div class="history-table-container" id="history-list">
+                  <!-- Dynamically populated rows -->
+                </div>
+              </div>
+              <div class="history-meta-info" id="history-count" style="display:none;">0 entries</div>
+            </div>
+          </section>
+
+          <!-- Voice Notes Tab -->
+          <section class="tab-content" id="content-notes">
+            <div class="notes-layout">
+              <div class="notes-top-row">
+                <h2 class="section-title">Voice Notes</h2>
+                <div class="notes-actions">
+                  <button class="new-note-btn" id="btn-new-note">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
                     </svg>
-                  </button>
-                  <button class="resume-recording-btn" id="btn-resume-recording" title="Resume" style="display: none;">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
-                  </button>
-                  <button class="stop-recording-btn" id="btn-stop-note-recording" title="Stop">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                      <path d="M6 6h12v12H6z"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Note Detail View -->
-            <div class="note-detail-view" id="note-detail-view" style="display: none;">
-              <div class="note-detail-header">
-                <button class="back-btn" id="btn-back-to-notes">← Back</button>
-                <button class="delete-note-btn" id="btn-delete-note">Delete</button>
-              </div>
-              <input type="text" class="note-title-input" id="note-title-input" placeholder="Note title...">
-              <div class="note-audio-player">
-                <audio id="note-audio-element" controls></audio>
-                <button class="copy-transcription-btn" id="btn-copy-transcription">Copy Text</button>
-              </div>
-              <textarea class="note-transcription" id="note-transcription" placeholder="Transcription..."></textarea>
-              <button class="save-note-btn" id="btn-save-note">Save Changes</button>
-            </div>
-
-            <!-- Notes List -->
-            <div class="notes-list-container" id="notes-list-container">
-              <div class="notes-empty-state" id="notes-empty">
-                <div class="empty-icon">🎙️</div>
-                <div class="empty-title">No voice notes</div>
-                <div class="empty-subtitle">Click "New Note" to record and save a voice note.</div>
-              </div>
-              <div class="notes-list" id="notes-list">
-                <!-- Dynamically populated -->
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Settings Tab -->
-        <section class="tab-content" id="content-settings">
-          <div class="settings-view">
-            <!-- Settings Sub-tabs -->
-            <div class="sub-nav-tabs">
-              <button class="sub-tab-btn active" id="sub-tab-audio">Audio Settings</button>
-              <button class="sub-tab-btn" id="sub-tab-ai">AI Settings</button>
-              <button class="sub-tab-btn" id="sub-tab-models">Models</button>
-            </div>
-
-            <!-- Audio Settings Tab Content -->
-            <div class="sub-tab-content active" id="sub-content-audio">
-              <div class="form-group">
-                <label class="form-label" for="mic-select">Microphone Input</label>
-                <select id="mic-select" class="form-input">
-                  <option value="Default">Default System Device</option>
-                </select>
-              </div>
-
-              <div class="form-group" style="margin-top: 8px;">
-                <div class="switch-row" style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); padding: 12px 16px; border-radius: 12px; margin-top: 4px;">
-                  <div class="switch-info" style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
-                    <span class="form-label" style="font-size: 0.95rem;">Noise Gate</span>
-                    <span style="font-size: 0.8rem; color: #94a3b8;">Silences quiet background static/hiss when you are not speaking.</span>
-                  </div>
-                  <label class="switch-toggle" style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; cursor: pointer;">
-                    <input type="checkbox" id="noise-gate-checkbox" style="opacity: 0; width: 0; height: 0;" />
-                    <span class="switch-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.08); transition: .3s; border-radius: 24px;"></span>
-                  </label>
-                </div>
-              </div>
-
-              <div class="form-group mic-test-container">
-                <label class="form-label">Live Microphone Test</label>
-                <div class="mic-test-row">
-                  <button class="test-mic-btn" id="btn-test-mic" type="button">
-                    <span class="btn-text">Test Mic</span>
-                  </button>
-                  <div class="mic-test-meter">
-                    <div class="mic-test-bar" id="mic-test-bar" style="width: 0%;"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- AI Settings Tab Content -->
-            <div class="sub-tab-content" id="sub-content-ai">
-              <!-- SECTION 1: Transcription Settings -->
-              <div class="settings-section-title" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; color: #a855f7;">Transcription Provider</div>
-              
-              <div class="form-group">
-                <label class="form-label" for="transcription-provider-select">Transcription Provider</label>
-                <select id="transcription-provider-select" class="form-input">
-                  <option value="gemini">Google Gemini (Cloud)</option>
-                  <option value="openai">OpenAI Whisper (Cloud)</option>
-                  <option value="local_whisper">Local Whisper (Offline)</option>
-                  <option value="local_parakeet">Nvidia Parakeet V3 (Offline)</option>
-                  <option value="lm_studio">LM Studio (Local)</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label" for="transcription-language-select">Spoken Language</label>
-                <select id="transcription-language-select" class="form-input">
-                  <option value="auto">Auto-detect Language</option>
-                  <option value="en">English</option>
-                  <option value="hi">Hindi</option>
-                  <option value="es">Spanish</option>
-                  <option value="fr">French</option>
-                  <option value="de">German</option>
-                  <option value="it">Italian</option>
-                  <option value="pt">Portuguese</option>
-                  <option value="zh">Chinese</option>
-                  <option value="ja">Japanese</option>
-                  <option value="ko">Korean</option>
-                  <option value="ru">Russian</option>
-                </select>
-              </div>
-
-              <!-- Gemini Transcription Settings -->
-              <div id="api-key-group" class="form-group">
-                <label class="form-label" for="api-key">Gemini API Key</label>
-                <div class="input-container">
-                  <input
-                    type="password"
-                    id="api-key"
-                    class="form-input"
-                    placeholder="Enter your Google Gemini API Key..."
-                  />
-                  <button class="input-toggle-btn" id="btn-toggle-key" type="button">
-                    👁️
+                    <span>New Note</span>
                   </button>
                 </div>
               </div>
 
-              <!-- OpenAI Transcription Settings -->
-              <div id="openai-settings" style="display: none;">
-                <div class="form-group" style="margin-top: 4px;">
-                  <label class="form-label" for="openai-api-key">OpenAI API Key</label>
-                  <div class="input-container">
-                    <input
-                      type="password"
-                      id="openai-api-key"
-                      class="form-input"
-                      placeholder="Enter your OpenAI API Key..."
-                    />
-                    <button class="input-toggle-btn" id="btn-toggle-openai-key" type="button">
-                      👁️
+              <!-- Title Input Modal Dialog -->
+              <div class="note-title-modal-overlay" id="note-title-modal" style="display: none;">
+                <div class="modal-card">
+                  <div class="modal-card-title">New Voice Note</div>
+                  <div class="form-row" style="margin: 16px 0;">
+                    <label class="form-row-label" for="new-note-title" style="text-align: center;">Note Title</label>
+                    <input type="text" id="new-note-title" class="form-field-input text-center" placeholder="Enter a name for your note..." />
+                  </div>
+                  <div class="modal-actions">
+                    <button class="clean-copy-btn" id="btn-cancel-title">Cancel</button>
+                    <button class="save-btn modal-start-btn" id="btn-start-recording">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="margin-right: 4px; display: inline-block; vertical-align: middle;">
+                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+                      </svg>
+                      Start Recording
                     </button>
                   </div>
                 </div>
-                <div class="form-group" style="margin-top: 12px;">
-                  <label class="form-label" for="openai-model">Whisper Model Name</label>
-                  <input
-                    type="text"
-                    id="openai-model"
-                    class="form-input"
-                    placeholder="whisper-1"
-                  />
-                </div>
               </div>
 
-              <!-- Local Whisper Transcription Settings -->
-              <div id="local-whisper-settings" style="display: none;">
-                <div class="form-group" style="margin-top: 4px;">
-                  <label class="form-label" for="local-whisper-model">Local Whisper Model</label>
-                  <select id="local-whisper-model" class="form-input">
-                    <option value="tiny">Tiny (Fastest, lowest accuracy)</option>
-                    <option value="base">Base (Fast, recommended)</option>
-                    <option value="small">Small (Balanced)</option>
-                    <option value="medium">Medium (Accurate, slower)</option>
-                    <option value="large-v3">Large V3 (Most accurate, slowest)</option>
-                    <option value="turbo">Turbo (Modern large variant)</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- LM Studio Transcription Settings -->
-              <div id="lm-studio-transcription-settings" style="display: none;">
-                <div class="form-group" style="margin-top: 4px;">
-                  <label class="form-label" for="lm-studio-transcription-url">LM Studio Server URL</label>
-                  <input
-                    type="text"
-                    id="lm-studio-transcription-url"
-                    class="form-input"
-                    placeholder="http://localhost:1234"
-                  />
-                </div>
-              </div>
-
-              <!-- Offline Model Manager Card -->
-              <div id="offline-model-card" class="settings-card" style="display: none; margin-top: 16px;">
-                <div class="settings-card-title">Offline Model Status</div>
-                <div class="model-status-row">
-                  <div class="model-status-info">
-                    <span class="model-name-label" id="model-name-display">Nvidia Parakeet V3</span>
-                    <span class="model-status-badge" id="model-status-badge">Not Downloaded</span>
+              <!-- Recording Visualizer Modal Dialog -->
+              <div class="note-recording-modal-overlay" id="note-recording-modal" style="display: none;">
+                <div class="modal-card recording-card">
+                  <div class="recording-indicator">
+                    <span class="recording-indicator-dot"></span>
+                    <span id="recording-title">Recording...</span>
                   </div>
-                  <button class="action-btn" id="btn-download-model" type="button">Download Model</button>
-                </div>
-                
-                <!-- Progress Container -->
-                <div class="progress-container" id="model-download-progress-container" style="display: none; margin-top: 12px;">
-                  <div class="progress-header">
-                    <span class="progress-status" id="download-status-text">Downloading...</span>
-                    <span class="progress-percent" id="download-percent-text">0%</span>
+                  <div class="recording-visualizer">
+                    <canvas id="note-recording-canvas"></canvas>
                   </div>
-                  <div class="progress-bar-track">
-                    <div class="progress-bar-fill" id="download-progress-bar" style="width: 0%;"></div>
-                  </div>
-                </div>
-              </div>
-
-              <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 20px 0;"></div>
-
-              <!-- SECTION 2: Refinement Settings -->
-              <div class="settings-section-title" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; color: #a855f7;">Transcript Refinement</div>
-
-              <div class="form-group">
-                <label class="form-label" for="provider-select">Refinement Provider</label>
-                <select id="provider-select" class="form-input">
-                  <option value="gemini">Google Gemini (Cloud)</option>
-                  <option value="openai">OpenAI GPT (Cloud)</option>
-                  <option value="openrouter">OpenRouter (Cloud)</option>
-                  <option value="custom">Custom API (OpenAI-Compatible)</option>
-                  <option value="ollama">Ollama (Local Refinement)</option>
-                  <option value="lm_studio">LM Studio (Local)</option>
-                  <option value="none">None (Direct Transcript)</option>
-                </select>
-              </div>
-
-              <!-- Gemini Model Settings -->
-              <div id="gemini-settings">
-                <div class="form-group" style="margin-top: 4px;">
-                  <label class="form-label" for="gemini-refine-api-key">Gemini API Key</label>
-                  <div class="input-container">
-                    <input
-                      type="password"
-                      id="gemini-refine-api-key"
-                      class="form-input"
-                      placeholder="Enter your Google Gemini API Key..."
-                    />
-                    <button class="input-toggle-btn" id="btn-toggle-gemini-refine-key" type="button">
-                      👁️
+                  <div class="recording-timer" id="recording-timer">00:00</div>
+                  <div class="recording-controls">
+                    <button class="record-control-btn pause" id="btn-pause-recording" title="Pause">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                      </svg>
+                    </button>
+                    <button class="record-control-btn resume" id="btn-resume-recording" title="Resume" style="display: none;">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </button>
+                    <button class="record-control-btn stop" id="btn-stop-note-recording" title="Stop & Save">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                        <path d="M6 6h12v12H6z"/>
+                      </svg>
                     </button>
                   </div>
                 </div>
-                <div class="form-group" style="margin-top: 12px;">
-                  <label class="form-label" for="model-input">Gemini Model Name</label>
-                  <input
-                    type="text"
-                    id="model-input"
-                    class="form-input"
-                    placeholder="e.g. gemini-2.0-flash"
-                  />
-                </div>
               </div>
 
-              <!-- OpenAI Refinement Settings -->
-              <div id="openai-refine-settings" style="display: none;">
-                <div class="form-group" style="margin-top: 4px;">
-                  <label class="form-label" for="openai-refine-api-key">OpenAI API Key</label>
-                  <div class="input-container">
-                    <input
-                      type="password"
-                      id="openai-refine-api-key"
-                      class="form-input"
-                      placeholder="Enter your OpenAI API Key..."
-                    />
-                    <button class="input-toggle-btn" id="btn-toggle-openai-refine-key" type="button">
-                      👁️
-                    </button>
+              <!-- Note Details Card Viewer -->
+              <div class="card-item note-detail-view" id="note-detail-view" style="display: none; flex-direction: column; gap: 16px;">
+                <div class="note-detail-header-row">
+                  <button class="clean-copy-btn" id="btn-back-to-notes">← Back</button>
+                  <button class="clear-all-btn" id="btn-delete-note">Delete Note</button>
+                </div>
+                <div class="form-row">
+                  <label class="form-row-label" for="note-title-input">Title</label>
+                  <input type="text" class="form-field-input" id="note-title-input" placeholder="Note title...">
+                </div>
+                <div class="note-audio-player-bar">
+                  <audio id="note-audio-element" controls></audio>
+                  <button class="clean-copy-btn" id="btn-copy-transcription">Copy Text</button>
+                </div>
+                <div class="form-row">
+                  <label class="form-row-label" for="note-transcription">Transcription</label>
+                  <textarea class="clean-textarea note-transcription-textarea" id="note-transcription" placeholder="No transcription available..."></textarea>
+                </div>
+                <button class="save-btn" id="btn-save-note">Save Changes</button>
+              </div>
+
+              <!-- Voice Notes Main List -->
+              <div class="card-item notes-main-card" id="notes-list-container">
+                <div class="notes-empty-state" id="notes-empty">
+                  <div class="empty-icon">🎙️</div>
+                  <div class="empty-title">No voice notes</div>
+                  <div class="empty-subtitle">Click "New Note" to record and save a voice note.</div>
+                </div>
+                <div class="notes-list-grid" id="notes-list">
+                  <!-- Dynamically populated card grid -->
+                </div>
+              </div>
+              <div class="notes-meta-info" id="notes-count" style="display: none;">0 notes</div>
+            </div>
+          </section>
+
+          <!-- Settings Tab -->
+          <section class="tab-content" id="content-settings">
+            <div class="settings-layout">
+              <h2 class="section-title">Settings</h2>
+
+              <!-- Settings Sub-tabs -->
+              <div class="settings-sub-tabs">
+                <button class="sub-tab-trigger active" id="sub-tab-audio">Audio Settings</button>
+                <button class="sub-tab-trigger" id="sub-tab-ai">AI Settings</button>
+                <button class="sub-tab-trigger" id="sub-tab-hotkeys">Trigger Keys</button>
+                <button class="sub-tab-trigger" id="sub-tab-models">Models</button>
+              </div>
+
+              <!-- Settings Primary Config Card -->
+              <div class="card-item settings-config-card">
+                <!-- Audio Settings Tab Content -->
+                <div class="sub-tab-panel active" id="sub-content-audio">
+                  <div class="form-row">
+                    <label class="form-row-label" for="mic-select">Microphone Input</label>
+                    <div class="select-wrapper">
+                      <select id="mic-select" class="clean-select form-field-input">
+                        <option value="Default">Default System Device</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="checkbox-setting-row">
+                      <div class="checkbox-setting-info">
+                        <span class="checkbox-title">Noise Gate</span>
+                        <span class="checkbox-desc">Silences quiet background static/hiss when you are not speaking.</span>
+                      </div>
+                      <label class="switch-toggle">
+                        <input type="checkbox" id="noise-gate-checkbox" />
+                        <span class="switch-slider"></span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="form-row mic-testing-block">
+                    <label class="form-row-label">Live Microphone Test</label>
+                    <div class="mic-test-row">
+                      <button class="test-mic-btn" id="btn-test-mic" type="button">
+                        <span class="btn-text">Test Mic</span>
+                      </button>
+                      <div class="mic-test-meter">
+                        <div class="mic-test-bar" id="mic-test-bar" style="width: 0%;"></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div class="form-group" style="margin-top: 12px;">
-                  <label class="form-label" for="openai-refine-model">OpenAI Model Name</label>
-                  <input
-                    type="text"
-                    id="openai-refine-model"
-                    class="form-input"
-                    placeholder="e.g. gpt-4o-mini"
-                  />
-                </div>
-              </div>
 
-              <!-- OpenRouter Settings -->
-              <div id="openrouter-settings" style="display: none;">
-                <div class="form-group" style="margin-top: 4px;">
-                  <label class="form-label" for="openrouter-api-key">OpenRouter API Key</label>
-                  <div class="input-container">
-                    <input
-                      type="password"
-                      id="openrouter-api-key"
-                      class="form-input"
-                      placeholder="Enter your OpenRouter API Key..."
-                    />
-                    <button class="input-toggle-btn" id="btn-toggle-openrouter-key" type="button">
-                      👁️
-                    </button>
+                <!-- AI Settings Tab Content -->
+                <div class="sub-tab-panel" id="sub-content-ai">
+                  <div class="form-row">
+                    <label class="form-row-label" for="transcription-provider-select">Transcription Provider</label>
+                    <div class="select-wrapper">
+                      <select id="transcription-provider-select" class="clean-select form-field-input">
+                        <option value="gemini">Google Gemini (Cloud)</option>
+                        <option value="openai">OpenAI Whisper (Cloud)</option>
+                        <option value="local_whisper">Local Whisper (Offline)</option>
+                        <option value="local_parakeet">Nvidia Parakeet V3 (Offline)</option>
+                        <option value="lm_studio">LM Studio (Local)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-row">
+                    <label class="form-row-label" for="transcription-language-select">Spoken Language</label>
+                    <div class="select-wrapper">
+                      <select id="transcription-language-select" class="clean-select form-field-input">
+                        <option value="auto">Auto-detect Language</option>
+                        <option value="en">English</option>
+                        <option value="hi">Hindi</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="zh">Chinese</option>
+                        <option value="ja">Japanese</option>
+                        <option value="ko">Korean</option>
+                        <option value="ru">Russian</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- Gemini Transcription Settings -->
+                  <div id="api-key-group" class="form-row">
+                    <label class="form-row-label" for="api-key">Gemini API Key</label>
+                    <div class="password-field-container">
+                      <input type="password" id="api-key" class="form-field-input" placeholder="Enter your Google Gemini API Key..." />
+                      <button class="password-toggle-btn" id="btn-toggle-key" type="button">👁️</button>
+                    </div>
+                  </div>
+
+                  <!-- OpenAI Transcription Settings -->
+                  <div id="openai-settings" style="display: none;">
+                    <div class="form-row">
+                      <label class="form-row-label" for="openai-api-key">OpenAI API Key</label>
+                      <div class="password-field-container">
+                        <input type="password" id="openai-api-key" class="form-field-input" placeholder="Enter your OpenAI API Key..." />
+                        <button class="password-toggle-btn" id="btn-toggle-openai-key" type="button">👁️</button>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <label class="form-row-label" for="openai-model">Whisper Model Name</label>
+                      <input type="text" id="openai-model" class="form-field-input" placeholder="whisper-1" />
+                    </div>
+                  </div>
+
+                  <!-- Local Whisper Transcription Settings -->
+                  <div id="local-whisper-settings" style="display: none;">
+                    <div class="form-row">
+                      <label class="form-row-label" for="local-whisper-model">Local Whisper Model</label>
+                      <div class="select-wrapper">
+                        <select id="local-whisper-model" class="clean-select form-field-input">
+                          <option value="tiny">Tiny (Fastest, lowest accuracy)</option>
+                          <option value="base">Base (Fast, recommended)</option>
+                          <option value="small">Small (Balanced)</option>
+                          <option value="medium">Medium (Accurate, slower)</option>
+                          <option value="large-v3">Large V3 (Most accurate, slowest)</option>
+                          <option value="turbo">Turbo (Modern large variant)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- LM Studio Transcription Settings -->
+                  <div id="lm-studio-transcription-settings" style="display: none;">
+                    <div class="form-row">
+                      <label class="form-row-label" for="lm-studio-transcription-url">LM Studio Server URL</label>
+                      <input type="text" id="lm-studio-transcription-url" class="form-field-input" placeholder="http://localhost:1234" />
+                    </div>
+                  </div>
+
+                  <!-- Offline Model Manager Card -->
+                  <div id="offline-model-card" class="offline-active-model-card" style="display: none;">
+                    <div class="offline-card-title">Offline Model Status</div>
+                    <div class="model-status-row">
+                      <div class="model-status-info">
+                        <span class="model-name-label" id="model-name-display">Nvidia Parakeet V3</span>
+                        <span class="model-status-badge" id="model-status-badge">Not Downloaded</span>
+                      </div>
+                      <button class="action-btn" id="btn-download-model" type="button">Download Model</button>
+                    </div>
+                    
+                    <!-- Progress Container -->
+                    <div class="progress-container" id="model-download-progress-container" style="display: none;">
+                      <div class="progress-header">
+                        <span class="progress-status" id="download-status-text">Downloading...</span>
+                        <span class="progress-percent" id="download-percent-text">0%</span>
+                      </div>
+                      <div class="progress-bar-track">
+                        <div class="progress-bar-fill" id="download-progress-bar" style="width: 0%;"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="settings-divider"></div>
+
+                  <!-- SECTION 2: Refinement Settings -->
+                  <div class="form-row">
+                    <label class="form-row-label" for="provider-select">Refinement Provider</label>
+                    <div class="select-wrapper">
+                      <select id="provider-select" class="clean-select form-field-input">
+                        <option value="gemini">Google Gemini (Cloud)</option>
+                        <option value="openai">OpenAI GPT (Cloud)</option>
+                        <option value="openrouter">OpenRouter (Cloud)</option>
+                        <option value="custom">Custom API (OpenAI-Compatible)</option>
+                        <option value="ollama">Ollama (Local Refinement)</option>
+                        <option value="lm_studio">LM Studio (Local)</option>
+                        <option value="none">None (Direct Transcript)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- Gemini Model Settings -->
+                  <div id="gemini-settings">
+                    <div class="form-row">
+                      <label class="form-row-label" for="gemini-refine-api-key">Gemini API Key</label>
+                      <div class="password-field-container">
+                        <input type="password" id="gemini-refine-api-key" class="form-field-input" placeholder="Enter your Google Gemini API Key..." />
+                        <button class="password-toggle-btn" id="btn-toggle-gemini-refine-key" type="button">👁️</button>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <label class="form-row-label" for="model-input">Gemini Model Name</label>
+                      <input type="text" id="model-input" class="form-field-input" placeholder="e.g. gemini-2.0-flash" />
+                    </div>
+                  </div>
+
+                  <!-- OpenAI Refinement Settings -->
+                  <div id="openai-refine-settings" style="display: none;">
+                    <div class="form-row">
+                      <label class="form-row-label" for="openai-refine-api-key">OpenAI API Key</label>
+                      <div class="password-field-container">
+                        <input type="password" id="openai-refine-api-key" class="form-field-input" placeholder="Enter your OpenAI API Key..." />
+                        <button class="password-toggle-btn" id="btn-toggle-openai-refine-key" type="button">👁️</button>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <label class="form-row-label" for="openai-refine-model">OpenAI Model Name</label>
+                      <input type="text" id="openai-refine-model" class="form-field-input" placeholder="e.g. gpt-4o-mini" />
+                    </div>
+                  </div>
+
+                  <!-- OpenRouter Settings -->
+                  <div id="openrouter-settings" style="display: none;">
+                    <div class="form-row">
+                      <label class="form-row-label" for="openrouter-api-key">OpenRouter API Key</label>
+                      <div class="password-field-container">
+                        <input type="password" id="openrouter-api-key" class="form-field-input" placeholder="Enter your OpenRouter API Key..." />
+                        <button class="password-toggle-btn" id="btn-toggle-openrouter-key" type="button">👁️</button>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <label class="form-row-label" for="openrouter-model">OpenRouter Model Name</label>
+                      <input type="text" id="openrouter-model" class="form-field-input" placeholder="e.g. google/gemini-2.5-flash" />
+                    </div>
+                  </div>
+
+                  <!-- Custom API Settings -->
+                  <div id="custom-api-settings" style="display: none;">
+                    <div class="form-row">
+                      <label class="form-row-label" for="custom-api-url">API Base URL</label>
+                      <input type="text" id="custom-api-url" class="form-field-input" placeholder="e.g. https://api.deepseek.com/v1" />
+                    </div>
+                    <div class="form-row">
+                      <label class="form-row-label" for="custom-api-key">Custom API Key</label>
+                      <div class="password-field-container">
+                        <input type="password" id="custom-api-key" class="form-field-input" placeholder="Enter your Custom API Key (if required)..." />
+                        <button class="password-toggle-btn" id="btn-toggle-custom-api-key" type="button">👁️</button>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <label class="form-row-label" for="custom-api-model">Custom Model Name</label>
+                      <input type="text" id="custom-api-model" class="form-field-input" placeholder="e.g. deepseek-chat" />
+                    </div>
+                  </div>
+
+                  <!-- Ollama Settings -->
+                  <div id="ollama-settings" style="display: none;">
+                    <div class="form-row">
+                      <label class="form-row-label" for="ollama-url">Ollama Server URL</label>
+                      <input type="text" id="ollama-url" class="form-field-input" placeholder="http://localhost:11434" />
+                    </div>
+                    <div class="form-row">
+                      <label class="form-row-label" for="ollama-model">Ollama Model Name</label>
+                      <input type="text" id="ollama-model" class="form-field-input" placeholder="e.g. llama3, mistral, gemma" />
+                    </div>
+                  </div>
+
+                  <!-- LM Studio Refinement Settings -->
+                  <div id="lm-studio-settings" style="display: none;">
+                    <div class="form-row">
+                      <label class="form-row-label" for="lm-studio-url">LM Studio Server URL</label>
+                      <input type="text" id="lm-studio-url" class="form-field-input" placeholder="http://localhost:1234" />
+                    </div>
+                    <div class="form-row">
+                      <label class="form-row-label" for="lm-studio-model">LM Studio Model Name</label>
+                      <input type="text" id="lm-studio-model" class="form-field-input" placeholder="e.g. llama-3, mistral, qwen" />
+                    </div>
+                  </div>
+
+                  <!-- Refinement Prompt -->
+                  <div class="form-row" id="refine-prompt-group">
+                    <label class="form-row-label" for="refine-prompt">AI Cleanup Instruction</label>
+                    <textarea id="refine-prompt" class="clean-textarea" placeholder="Give instructions to the AI (e.g. clean up fillers, fix grammar)..."></textarea>
+                    
+                    <!-- Quick Preset Picker -->
+                    <div class="preset-selector">
+                      <span class="preset-badge" data-prompt="Transcribe and clean up the audio. Remove filler words and format appropriately.">Default</span>
+                      <span class="preset-badge" data-prompt="Transcribe and format as a clear, professional email draft. Maintain formal language.">Professional Email</span>
+                      <span class="preset-badge" data-prompt="Transcribe and format as software engineering documentation or clean notes. Format code blocks if any.">Developer Notes</span>
+                      <span class="preset-badge" data-prompt="Transcribe verbatim. Do not change any words, keep all filler sounds as text.">Verbatim Transcript</span>
+                      <span class="preset-badge" data-prompt="Act as a prompt engineering assistant. Refine and optimize the transcribed input into a clear, structured, and effective LLM prompt.">Prompt Engineer</span>
+                    </div>
                   </div>
                 </div>
-                <div class="form-group" style="margin-top: 12px;">
-                  <label class="form-label" for="openrouter-model">OpenRouter Model Name</label>
-                  <input
-                    type="text"
-                    id="openrouter-model"
-                    class="form-input"
-                    placeholder="e.g. google/gemini-2.5-flash"
-                  />
-                </div>
-              </div>
 
-              <!-- Custom API Settings -->
-              <div id="custom-api-settings" style="display: none;">
-                <div class="form-group" style="margin-top: 4px;">
-                  <label class="form-label" for="custom-api-url">API Base URL</label>
-                  <input
-                    type="text"
-                    id="custom-api-url"
-                    class="form-input"
-                    placeholder="e.g. https://api.deepseek.com/v1"
-                  />
-                </div>
-                <div class="form-group" style="margin-top: 12px;">
-                  <label class="form-label" for="custom-api-key">Custom API Key</label>
-                  <div class="input-container">
-                    <input
-                      type="password"
-                      id="custom-api-key"
-                      class="form-input"
-                      placeholder="Enter your Custom API Key (if required)..."
-                    />
-                    <button class="input-toggle-btn" id="btn-toggle-custom-api-key" type="button">
-                      👁️
-                    </button>
+                <!-- Settings Trigger Keys Hotkeys Content -->
+                <div class="sub-tab-panel" id="sub-content-hotkeys">
+                  <div class="form-row">
+                    <label class="form-row-label" for="transcribe-hotkey-select">Transcribe Trigger Key</label>
+                    <div class="select-wrapper">
+                      <select id="transcribe-hotkey-select" class="clean-select form-field-input">
+                        <option value="Control">Control (Default)</option>
+                        <option value="Shift">Shift</option>
+                        <option value="Alt">Alt</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <label class="form-row-label" for="notes-hotkey-select">Voice Notes Trigger Key</label>
+                    <div class="select-wrapper">
+                      <select id="notes-hotkey-select" class="clean-select form-field-input">
+                        <option value="Control + Win">Control + Win (Default)</option>
+                        <option value="Control + Shift">Control + Shift</option>
+                        <option value="Control + Alt">Control + Alt</option>
+                        <option value="Alt + Shift">Alt + Shift</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
-                <div class="form-group" style="margin-top: 12px;">
-                  <label class="form-label" for="custom-api-model">Custom Model Name</label>
-                  <input
-                    type="text"
-                    id="custom-api-model"
-                    class="form-input"
-                    placeholder="e.g. deepseek-chat"
-                  />
+
+                <!-- Models Management Tab Content -->
+                <div class="sub-tab-panel" id="sub-content-models">
+                  <div class="model-manager-top">
+                    <div class="model-manager-title">Local Models Manager</div>
+                    <div class="model-manager-description">
+                      Manage offline model files for local transcription. Downloaded models can run fully offline, privately, and securely on your device.
+                    </div>
+                  </div>
+
+                  <!-- Model List Container -->
+                  <div class="model-manager-list" id="model-manager-list">
+                    <!-- Parakeet V3 -->
+                    <div class="model-card" data-model-id="parakeet_v3">
+                      <div class="model-card-header">
+                        <div class="model-card-info">
+                          <div class="model-card-name">Nvidia Parakeet V3</div>
+                          <div class="model-card-meta">Local Offline Engine | ~110 MB | Fast & accurate</div>
+                        </div>
+                        <div class="model-card-status">
+                          <span class="model-status-badge not-downloaded" id="status-badge-parakeet_v3">Not Downloaded</span>
+                        </div>
+                      </div>
+                      <div class="model-card-progress-container" id="progress-container-parakeet_v3" style="display: none;">
+                        <div class="progress-header">
+                          <span class="progress-status" id="progress-status-parakeet_v3">Downloading...</span>
+                          <span class="progress-percent" id="progress-percent-parakeet_v3">0%</span>
+                        </div>
+                        <div class="progress-bar-track">
+                          <div class="progress-bar-fill" id="progress-bar-parakeet_v3" style="width: 0%;"></div>
+                        </div>
+                      </div>
+                      <div class="model-card-actions">
+                        <button class="model-action-btn btn-download" id="btn-download-parakeet_v3" type="button">Download</button>
+                        <button class="model-action-btn btn-delete" id="btn-delete-parakeet_v3" style="display: none;" type="button">Delete</button>
+                      </div>
+                    </div>
+
+                    <!-- Whisper Tiny -->
+                    <div class="model-card" data-model-id="whisper_tiny">
+                      <div class="model-card-header">
+                        <div class="model-card-info">
+                          <div class="model-card-name">Whisper Tiny</div>
+                          <div class="model-card-meta">Local Whisper Engine | ~75 MB | Blazing fast, lower accuracy</div>
+                        </div>
+                        <div class="model-card-status">
+                          <span class="model-status-badge not-downloaded" id="status-badge-whisper_tiny">Not Downloaded</span>
+                        </div>
+                      </div>
+                      <div class="model-card-progress-container" id="progress-container-whisper_tiny" style="display: none;">
+                        <div class="progress-header">
+                          <span class="progress-status" id="progress-status-whisper_tiny">Downloading...</span>
+                          <span class="progress-percent" id="progress-percent-whisper_tiny">0%</span>
+                        </div>
+                        <div class="progress-bar-track">
+                          <div class="progress-bar-fill" id="progress-bar-whisper_tiny" style="width: 0%;"></div>
+                        </div>
+                      </div>
+                      <div class="model-card-actions">
+                        <button class="model-action-btn btn-download" id="btn-download-whisper_tiny" type="button">Download</button>
+                        <button class="model-action-btn btn-delete" id="btn-delete-whisper_tiny" style="display: none;" type="button">Delete</button>
+                      </div>
+                    </div>
+
+                    <!-- Whisper Base -->
+                    <div class="model-card" data-model-id="whisper_base">
+                      <div class="model-card-header">
+                        <div class="model-card-info">
+                          <div class="model-card-name">Whisper Base</div>
+                          <div class="model-card-meta">Local Whisper Engine | ~140 MB | Recommended balance</div>
+                        </div>
+                        <div class="model-card-status">
+                          <span class="model-status-badge not-downloaded" id="status-badge-whisper_base">Not Downloaded</span>
+                        </div>
+                      </div>
+                      <div class="model-card-progress-container" id="progress-container-whisper_base" style="display: none;">
+                        <div class="progress-header">
+                          <span class="progress-status" id="progress-status-whisper_base">Downloading...</span>
+                          <span class="progress-percent" id="progress-percent-whisper_base">0%</span>
+                        </div>
+                        <div class="progress-bar-track">
+                          <div class="progress-bar-fill" id="progress-bar-whisper_base" style="width: 0%;"></div>
+                        </div>
+                      </div>
+                      <div class="model-card-actions">
+                        <button class="model-action-btn btn-download" id="btn-download-whisper_base" type="button">Download</button>
+                        <button class="model-action-btn btn-delete" id="btn-delete-whisper_base" style="display: none;" type="button">Delete</button>
+                      </div>
+                    </div>
+
+                    <!-- Whisper Small -->
+                    <div class="model-card" data-model-id="whisper_small">
+                      <div class="model-card-header">
+                        <div class="model-card-info">
+                          <div class="model-card-name">Whisper Small</div>
+                          <div class="model-card-meta">Local Whisper Engine | ~460 MB | High accuracy, slower</div>
+                        </div>
+                        <div class="model-card-status">
+                          <span class="model-status-badge not-downloaded" id="status-badge-whisper_small">Not Downloaded</span>
+                        </div>
+                      </div>
+                      <div class="model-card-progress-container" id="progress-container-whisper_small" style="display: none;">
+                        <div class="progress-header">
+                          <span class="progress-status" id="progress-status-whisper_small">Downloading...</span>
+                          <span class="progress-percent" id="progress-percent-whisper_small">0%</span>
+                        </div>
+                        <div class="progress-bar-track">
+                          <div class="progress-bar-fill" id="progress-bar-whisper_small" style="width: 0%;"></div>
+                        </div>
+                      </div>
+                      <div class="model-card-actions">
+                        <button class="model-action-btn btn-download" id="btn-download-whisper_small" type="button">Download</button>
+                        <button class="model-action-btn btn-delete" id="btn-delete-whisper_small" style="display: none;" type="button">Delete</button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <!-- Ollama Settings -->
-              <div id="ollama-settings" style="display: none;">
-                <div class="form-group" style="margin-top: 4px;">
-                  <label class="form-label" for="ollama-url">Ollama Server URL</label>
-                  <input
-                    type="text"
-                    id="ollama-url"
-                    class="form-input"
-                    placeholder="http://localhost:11434"
-                  />
+              <!-- Settings Integrated Status Footer and Save Controls Bar -->
+              <div class="settings-status-footer">
+                <div class="performance-advisor" id="performance-advisor">
+                  <div class="advisor-header">
+                    <span class="advisor-status-dot"></span>
+                    <span class="advisor-title">Estimated Speed:</span>
+                    <span class="advisor-badge" id="advisor-badge">Fast</span>
+                    <span class="advisor-description" id="advisor-description">~200ms delay per sentence</span>
+                  </div>
+                  <!-- Deprecated icon/elements hidden or adapted -->
+                  <span id="advisor-icon" style="display:none;"></span>
                 </div>
-
-                <div class="form-group" style="margin-top: 12px;">
-                  <label class="form-label" for="ollama-model">Ollama Model Name</label>
-                  <input
-                    type="text"
-                    id="ollama-model"
-                    class="form-input"
-                    placeholder="e.g. llama3, mistral, gemma"
-                  />
-                </div>
-              </div>
-
-              <!-- LM Studio Refinement Settings -->
-              <div id="lm-studio-settings" style="display: none;">
-                <div class="form-group" style="margin-top: 4px;">
-                  <label class="form-label" for="lm-studio-url">LM Studio Server URL</label>
-                  <input
-                    type="text"
-                    id="lm-studio-url"
-                    class="form-input"
-                    placeholder="http://localhost:1234"
-                  />
-                </div>
-
-                <div class="form-group" style="margin-top: 12px;">
-                  <label class="form-label" for="lm-studio-model">LM Studio Model Name</label>
-                  <input
-                    type="text"
-                    id="lm-studio-model"
-                    class="form-input"
-                    placeholder="e.g. llama-3, mistral, qwen"
-                  />
-                </div>
-              </div>
-
-              <!-- Refinement Prompt -->
-              <div class="form-group" id="refine-prompt-group" style="margin-top: 12px;">
-                <label class="form-label" for="refine-prompt">AI Cleanup Instruction</label>
-                <textarea
-                  id="refine-prompt"
-                  class="form-textarea"
-                  placeholder="Give instructions to the AI (e.g. clean up fillers, fix grammar)..."
-                ></textarea>
-                
-                <!-- Quick Preset Picker -->
-                <div class="preset-selector">
-                  <span class="preset-badge" data-prompt="Transcribe and clean up the audio. Remove filler words and format appropriately.">Default</span>
-                  <span class="preset-badge" data-prompt="Transcribe and format as a clear, professional email draft. Maintain formal language.">Professional Email</span>
-                  <span class="preset-badge" data-prompt="Transcribe and format as software engineering documentation or clean notes. Format code blocks if any.">Developer Notes</span>
-                  <span class="preset-badge" data-prompt="Transcribe verbatim. Do not change any words, keep all filler sounds as text.">Verbatim Transcript</span>
-                  <span class="preset-badge" data-prompt="Act as a prompt engineering assistant. Refine and optimize the transcribed input into a clear, structured, and effective LLM prompt.">Prompt Engineer</span>
-                </div>
-              </div>
-              
-              <!-- Dynamic Speed & Performance Advisor -->
-              <div class="performance-advisor" id="performance-advisor">
-                <div class="advisor-header">
-                  <span class="advisor-icon" id="advisor-icon">🚀</span>
-                  <span class="advisor-title">Estimated Speed:</span>
-                  <span class="advisor-badge" id="advisor-badge">Blazing Fast (~1.5s)</span>
-                </div>
-                <div class="advisor-description" id="advisor-description">
-                  Using Google Gemini for both transcription and refinement is highly recommended for near-instant responses.
-                </div>
+                <button class="save-btn" id="btn-save-settings">Save Configurations</button>
               </div>
             </div>
-
-            <!-- Models Management Tab Content -->
-            <div class="sub-tab-content" id="sub-content-models">
-              <div class="settings-section-title" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; color: #a855f7;">Local Models Manager</div>
-              <div class="model-manager-description" style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 16px; text-align: left; line-height: 1.4;">
-                Manage offline model files for local transcription. Downloaded models can run fully offline, privately, and securely on your device.
-              </div>
-
-              <!-- Model List Container -->
-              <div class="model-manager-list" id="model-manager-list">
-                <!-- Parakeet V3 -->
-                <div class="model-card" data-model-id="parakeet_v3">
-                  <div class="model-card-header">
-                    <div class="model-card-info">
-                      <div class="model-card-name">Nvidia Parakeet V3</div>
-                      <div class="model-card-meta">Local Offline Engine | ~110 MB | Fast & accurate</div>
-                    </div>
-                    <div class="model-card-status">
-                      <span class="model-status-badge not-downloaded" id="status-badge-parakeet_v3">Not Downloaded</span>
-                    </div>
-                  </div>
-                  <div class="model-card-progress-container" id="progress-container-parakeet_v3" style="display: none;">
-                    <div class="progress-header">
-                      <span class="progress-status" id="progress-status-parakeet_v3">Downloading...</span>
-                      <span class="progress-percent" id="progress-percent-parakeet_v3">0%</span>
-                    </div>
-                    <div class="progress-bar-track">
-                      <div class="progress-bar-fill" id="progress-bar-parakeet_v3" style="width: 0%;"></div>
-                    </div>
-                  </div>
-                  <div class="model-card-actions">
-                    <button class="model-action-btn btn-download" id="btn-download-parakeet_v3" type="button">Download</button>
-                    <button class="model-action-btn btn-delete" id="btn-delete-parakeet_v3" style="display: none;" type="button">Delete</button>
-                  </div>
-                </div>
-
-                <!-- Whisper Tiny -->
-                <div class="model-card" data-model-id="whisper_tiny">
-                  <div class="model-card-header">
-                    <div class="model-card-info">
-                      <div class="model-card-name">Whisper Tiny</div>
-                      <div class="model-card-meta">Local Whisper Engine | ~75 MB | Blazing fast, lower accuracy</div>
-                    </div>
-                    <div class="model-card-status">
-                      <span class="model-status-badge not-downloaded" id="status-badge-whisper_tiny">Not Downloaded</span>
-                    </div>
-                  </div>
-                  <div class="model-card-progress-container" id="progress-container-whisper_tiny" style="display: none;">
-                    <div class="progress-header">
-                      <span class="progress-status" id="progress-status-whisper_tiny">Downloading...</span>
-                      <span class="progress-percent" id="progress-percent-whisper_tiny">0%</span>
-                    </div>
-                    <div class="progress-bar-track">
-                      <div class="progress-bar-fill" id="progress-bar-whisper_tiny" style="width: 0%;"></div>
-                    </div>
-                  </div>
-                  <div class="model-card-actions">
-                    <button class="model-action-btn btn-download" id="btn-download-whisper_tiny" type="button">Download</button>
-                    <button class="model-action-btn btn-delete" id="btn-delete-whisper_tiny" style="display: none;" type="button">Delete</button>
-                  </div>
-                </div>
-
-                <!-- Whisper Base -->
-                <div class="model-card" data-model-id="whisper_base">
-                  <div class="model-card-header">
-                    <div class="model-card-info">
-                      <div class="model-card-name">Whisper Base</div>
-                      <div class="model-card-meta">Local Whisper Engine | ~140 MB | Recommended balance</div>
-                    </div>
-                    <div class="model-card-status">
-                      <span class="model-status-badge not-downloaded" id="status-badge-whisper_base">Not Downloaded</span>
-                    </div>
-                  </div>
-                  <div class="model-card-progress-container" id="progress-container-whisper_base" style="display: none;">
-                    <div class="progress-header">
-                      <span class="progress-status" id="progress-status-whisper_base">Downloading...</span>
-                      <span class="progress-percent" id="progress-percent-whisper_base">0%</span>
-                    </div>
-                    <div class="progress-bar-track">
-                      <div class="progress-bar-fill" id="progress-bar-whisper_base" style="width: 0%;"></div>
-                    </div>
-                  </div>
-                  <div class="model-card-actions">
-                    <button class="model-action-btn btn-download" id="btn-download-whisper_base" type="button">Download</button>
-                    <button class="model-action-btn btn-delete" id="btn-delete-whisper_base" style="display: none;" type="button">Delete</button>
-                  </div>
-                </div>
-
-                <!-- Whisper Small -->
-                <div class="model-card" data-model-id="whisper_small">
-                  <div class="model-card-header">
-                    <div class="model-card-info">
-                      <div class="model-card-name">Whisper Small</div>
-                      <div class="model-card-meta">Local Whisper Engine | ~460 MB | High accuracy, slower</div>
-                    </div>
-                    <div class="model-card-status">
-                      <span class="model-status-badge not-downloaded" id="status-badge-whisper_small">Not Downloaded</span>
-                    </div>
-                  </div>
-                  <div class="model-card-progress-container" id="progress-container-whisper_small" style="display: none;">
-                    <div class="progress-header">
-                      <span class="progress-status" id="progress-status-whisper_small">Downloading...</span>
-                      <span class="progress-percent" id="progress-percent-whisper_small">0%</span>
-                    </div>
-                    <div class="progress-bar-track">
-                      <div class="progress-bar-fill" id="progress-bar-whisper_small" style="width: 0%;"></div>
-                    </div>
-                  </div>
-                  <div class="model-card-actions">
-                    <button class="model-action-btn btn-download" id="btn-download-whisper_small" type="button">Download</button>
-                    <button class="model-action-btn btn-delete" id="btn-delete-whisper_small" style="display: none;" type="button">Delete</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button class="save-btn" id="btn-save-settings">Save Configurations</button>
-          </div>
-        </section>
+          </section>
+        </main>
       </div>
 
       <!-- Toast Alert Notification -->
