@@ -88,13 +88,7 @@
               </svg>
               <span>History</span>
             </button>
-            <button class="menu-item" id="tab-notes">
-              <svg class="menu-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v4M8 23h8"></path>
-              </svg>
-              <span>Notes</span>
-            </button>
+
             <button class="menu-item" id="tab-settings">
               <svg class="menu-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="3"></circle>
@@ -214,23 +208,10 @@
                     <span class="stat-num" id="stat-streak">1</span>
                     <span class="stat-label">day streak</span>
                   </div>
-                  <div class="stat-entry">
-                    <span class="stat-num" id="stat-notes-count">0</span>
-                    <span class="stat-label">notes</span>
-                  </div>
+
                 </div>
 
-                <!-- Note Ready Notification -->
-                <div class="card-item note-ready-notification" id="note-ready-notification" style="display: none;">
-                  <div class="note-ready-content">
-                    <span class="note-ready-icon">📝</span>
-                    <div class="note-ready-text">
-                      <span class="note-ready-title" id="note-ready-title">Note is ready!</span>
-                      <span class="note-ready-subtitle" id="note-ready-subtitle">Click to view your transcribed note</span>
-                    </div>
-                  </div>
-                  <button class="note-ready-dismiss" id="note-ready-dismiss" title="Dismiss">&times;</button>
-                </div>
+
               </div>
             </div>
           </section>
@@ -261,77 +242,7 @@
             </div>
           </section>
 
-          <!-- Voice Notes Tab -->
-          <section class="tab-content" id="content-notes">
-            <div class="notes-layout">
-              <div class="notes-top-row">
-                <h2 class="section-title">Voice Notes</h2>
-                <div class="notes-actions">
-                  <button class="new-note-btn" id="btn-new-note">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
-                    </svg>
-                    <span>New Note</span>
-                  </button>
-                </div>
-              </div>
 
-
-              <!-- Note Details Card Viewer -->
-              <div class="card-item note-detail-view" id="note-detail-view" style="display: none; flex-direction: column; gap: 16px;">
-                <div class="note-detail-header-row">
-                  <button class="clean-copy-btn" id="btn-back-to-notes">← Back</button>
-                  <div class="note-detail-header-actions" style="display: flex; gap: 8px;">
-                    <button class="clean-copy-btn" id="btn-copy-transcription" style="margin-top: 0; display: flex; align-items: center; gap: 6px;">
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-                      </svg>
-                      <span>Copy Text</span>
-                    </button>
-                    <button class="clear-all-btn" id="btn-delete-note" style="margin-top: 0; display: flex; align-items: center; gap: 6px;">
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                      </svg>
-                      <span>Delete Note</span>
-                    </button>
-                  </div>
-                </div>
-                <div class="form-row">
-                  <label class="form-row-label" for="note-title-input">Title</label>
-                  <input type="text" class="form-field-input" id="note-title-input" placeholder="Note title...">
-                </div>
-                <div class="note-audio-player-bar">
-                  <audio id="note-audio-element" controls></audio>
-                </div>
-                <div class="form-row">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <label class="form-row-label" for="note-transcription" style="margin-bottom: 0;">Transcription</label>
-                    <button class="clean-copy-btn" id="btn-polish-note" style="margin-top: 0; display: flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 13px;">
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                        <path d="M19 11.5l1.2-2.7 2.7-1.2-2.7-1.2-1.2-2.7-1.2 2.7-2.7 1.2 2.7 1.2zM7.5 10.5l1.9-4.2L13.6 4.4 9.4 2.5 7.5-1.7 5.6 2.5 1.4 4.4 5.6 6.3zM13.5 14.5l-1.9 4.2-4.2 1.9 4.2 1.9 1.9 4.2 1.9-4.2 4.2-1.9-4.2-1.9z"/>
-                      </svg>
-                      <span id="polish-button-text">AI Polish</span>
-                    </button>
-                  </div>
-                  <textarea class="clean-textarea note-transcription-textarea" id="note-transcription" placeholder="No transcription available..."></textarea>
-                </div>
-                <button class="save-btn" id="btn-save-note">Save Changes</button>
-              </div>
-
-              <!-- Voice Notes Main List -->
-              <div class="card-item notes-main-card" id="notes-list-container">
-                <div class="notes-empty-state" id="notes-empty">
-                  <div class="empty-icon">🎙️</div>
-                  <div class="empty-title">No voice notes</div>
-                  <div class="empty-subtitle">Click "New Note" to record and save a voice note.</div>
-                </div>
-                <div class="notes-list-grid" id="notes-list">
-                  <!-- Dynamically populated card grid -->
-                </div>
-              </div>
-              <div class="notes-meta-info" id="notes-count" style="display: none;">0 notes</div>
-            </div>
-          </section>
 
           <!-- Settings Tab -->
           <section class="tab-content" id="content-settings">
@@ -638,22 +549,7 @@
                       </div>
                     </div>
 
-                    <!-- Notes -->
-                    <div class="shortcut-card">
-                      <div class="shortcut-card-body">
-                        <div class="shortcut-info-col">
-                          <span class="shortcut-name">Notes</span>
-                          <span class="shortcut-description">Open the notes creator to record a new note</span>
-                        </div>
-                        <div class="hotkey-picker-box">
-                          <div class="hotkey-visual-display" id="notes-hotkey-display" tabindex="0">
-                            <span class="visual-keycap">Ctrl</span>
-                            <span class="visual-keycap">Win</span>
-                            <span class="edit-pencil-indicator">✏️</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+
 
                     <!-- Cancel Shortcut -->
                     <div class="shortcut-card">
@@ -814,77 +710,7 @@
         </main>
       </div>
 
-      <!-- Title Input Modal Dialog -->
-      <div class="note-title-modal-overlay" id="note-title-modal" style="display: none;">
-        <div class="modal-card">
-          <div class="modal-card-title">New Voice Note</div>
-          <div class="form-row" style="margin: 16px 0;">
-            <label class="form-row-label" for="new-note-title" style="text-align: center;">Note Title</label>
-            <input type="text" id="new-note-title" class="form-field-input text-center" placeholder="Enter a name for your note..." />
-          </div>
-          <div class="form-row" style="margin: 16px 0 24px 0;">
-            <label class="form-row-label" style="text-align: center; margin-bottom: 8px;">Refinement Mode</label>
-            <div class="refinement-options-group">
-              <label class="refinement-option">
-                <input type="radio" name="note-refinement-mode" value="polished" checked />
-                <span class="refinement-option-card">
-                  <span class="refinement-option-icon">✨</span>
-                  <span class="refinement-option-title">Polished</span>
-                  <span class="refinement-option-desc">Refined & cleaned using LLM</span>
-                </span>
-              </label>
-              <label class="refinement-option">
-                <input type="radio" name="note-refinement-mode" value="verbatim" />
-                <span class="refinement-option-card">
-                  <span class="refinement-option-icon">📝</span>
-                  <span class="refinement-option-title">Verbatim</span>
-                  <span class="refinement-option-desc">Raw text transcribed exactly</span>
-                </span>
-              </label>
-            </div>
-          </div>
-          <div class="modal-actions">
-            <button class="clean-copy-btn" id="btn-cancel-title">Cancel</button>
-            <button class="save-btn modal-start-btn" id="btn-start-recording">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="margin-right: 4px; display: inline-block; vertical-align: middle;">
-                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
-              </svg>
-              Start Recording
-            </button>
-          </div>
-        </div>
-      </div>
 
-      <!-- Recording Visualizer Modal Dialog -->
-      <div class="note-recording-modal-overlay" id="note-recording-modal" style="display: none;">
-        <div class="modal-card recording-card">
-          <div class="recording-indicator">
-            <span class="recording-indicator-dot"></span>
-            <span id="recording-title">Recording...</span>
-          </div>
-          <div class="recording-visualizer">
-            <canvas id="note-recording-canvas"></canvas>
-          </div>
-          <div class="recording-timer" id="recording-timer">00:00</div>
-          <div class="recording-controls">
-            <button class="record-control-btn pause" id="btn-pause-recording" title="Pause">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-              </svg>
-            </button>
-            <button class="record-control-btn resume" id="btn-resume-recording" title="Resume" style="display: none;">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-            </button>
-            <button class="record-control-btn stop" id="btn-stop-note-recording" title="Stop & Save">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                <path d="M6 6h12v12H6z"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
 
       <!-- Toast Alert Notification -->
       <div class="toast" id="toast-alert">

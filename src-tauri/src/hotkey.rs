@@ -27,8 +27,6 @@ static mut SENDER: Option<std::sync::mpsc::Sender<HotkeyEvent>> = None;
 #[cfg(target_os = "windows")]
 static TRANSCRIBE_KEY: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("Control".to_string()));
 #[cfg(target_os = "windows")]
-static NOTES_KEY: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("Control + Win".to_string()));
-#[cfg(target_os = "windows")]
 static CANCEL_KEY: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("Escape".to_string()));
 
 // Modifier key tracking states
@@ -45,12 +43,9 @@ static WIN_HELD: AtomicBool = AtomicBool::new(false);
 static ACTIVE_RECORDING: Lazy<Mutex<Option<RecordingType>>> = Lazy::new(|| Mutex::new(None));
 
 #[cfg(target_os = "windows")]
-pub fn update_hotkeys(transcribe: &str, notes: &str, cancel: &str) {
+pub fn update_hotkeys(transcribe: &str, cancel: &str) {
     if let Ok(mut t) = TRANSCRIBE_KEY.lock() {
         *t = transcribe.to_string();
-    }
-    if let Ok(mut n) = NOTES_KEY.lock() {
-        *n = notes.to_string();
     }
     if let Ok(mut c) = CANCEL_KEY.lock() {
         *c = cancel.to_string();
@@ -103,12 +98,11 @@ fn get_cancel_vk(key_name: &str) -> u32 {
 }
 
 #[cfg(not(target_os = "windows"))]
-pub fn update_hotkeys(_transcribe: &str, _notes: &str, _cancel: &str) {}
+pub fn update_hotkeys(_transcribe: &str, _cancel: &str) {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RecordingType {
     Transcribe,
-    Notes,
 }
 
 #[derive(Debug)]
@@ -322,7 +316,6 @@ unsafe extern "system" fn low_level_keyboard_proc(
         }
 
         let target_transcribe = if let Ok(t) = TRANSCRIBE_KEY.lock() { t.clone() } else { "Control".to_string() };
-        let target_notes = if let Ok(n) = NOTES_KEY.lock() { n.clone() } else { "Control + Win".to_string() };
         let target_cancel = if let Ok(c) = CANCEL_KEY.lock() { c.clone() } else { "Escape".to_string() };
 
         let matches_cancel = match_hotkey_state(&target_cancel, vk, is_modifier) && is_down;
@@ -341,42 +334,21 @@ unsafe extern "system" fn low_level_keyboard_proc(
             return CallNextHookEx(HOOK_HANDLE, n_code, w_param, l_param);
         }
 
-        let matches_notes = match_hotkey_state(&target_notes, vk, is_modifier) && is_down;
         let matches_transcribe = match_hotkey_state(&target_transcribe, vk, is_modifier) && is_down;
 
         let mut active = ACTIVE_RECORDING.lock().unwrap();
 
-        if matches_notes {
-            if *active == None {
-                *active = Some(RecordingType::Notes);
-                if let Some(ref tx) = SENDER {
-                    let _ = tx.send(HotkeyEvent::Pressed(RecordingType::Notes));
-                }
-            } else if *active == Some(RecordingType::Transcribe) {
-                if let Some(ref tx) = SENDER {
-                    let _ = tx.send(HotkeyEvent::Cancelled(RecordingType::Transcribe));
-                    let _ = tx.send(HotkeyEvent::Pressed(RecordingType::Notes));
-                }
-                *active = Some(RecordingType::Notes);
-            }
-        } else if matches_transcribe {
+        if matches_transcribe {
             if *active == None {
                 *active = Some(RecordingType::Transcribe);
                 if let Some(ref tx) = SENDER {
                     let _ = tx.send(HotkeyEvent::Pressed(RecordingType::Transcribe));
                 }
-            } else if *active == Some(RecordingType::Notes) {
-                if let Some(ref tx) = SENDER {
-                    let _ = tx.send(HotkeyEvent::Cancelled(RecordingType::Notes));
-                    let _ = tx.send(HotkeyEvent::Pressed(RecordingType::Transcribe));
-                }
-                *active = Some(RecordingType::Transcribe);
             }
         } else {
             if let Some(rec_type) = *active {
                 let target = match rec_type {
                     RecordingType::Transcribe => &target_transcribe,
-                    RecordingType::Notes => &target_notes,
                 };
                 if !is_hotkey_held(target, vk, is_modifier, is_up) {
                     if let Some(ref tx) = SENDER {
