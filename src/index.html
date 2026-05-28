@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Murmur - Dictation Workspace</title>
     <link rel="stylesheet" href="styles.css" />
+    <script>
+      // Apply dark mode early to prevent flash of light theme
+      if (localStorage.getItem('murmur_theme') === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    </script>
     <script type="module" src="/main.js" defer></script>
   </head>
   <body>
@@ -97,6 +103,17 @@
               <span>Settings</span>
             </button>
           </nav>
+          <div class="sidebar-spacer"></div>
+          <div class="dark-mode-toggle-row" id="dark-mode-toggle-row">
+            <svg class="dark-mode-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+            <span class="dark-mode-label">Dark</span>
+            <label class="switch-toggle dark-mode-switch">
+              <input type="checkbox" id="dark-mode-checkbox" />
+              <span class="switch-slider"></span>
+            </label>
+          </div>
         </aside>
 
         <!-- Content Container -->
@@ -287,7 +304,15 @@
                   <audio id="note-audio-element" controls></audio>
                 </div>
                 <div class="form-row">
-                  <label class="form-row-label" for="note-transcription">Transcription</label>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label class="form-row-label" for="note-transcription" style="margin-bottom: 0;">Transcription</label>
+                    <button class="clean-copy-btn" id="btn-polish-note" style="margin-top: 0; display: flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 13px;">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                        <path d="M19 11.5l1.2-2.7 2.7-1.2-2.7-1.2-1.2-2.7-1.2 2.7-2.7 1.2 2.7 1.2zM7.5 10.5l1.9-4.2L13.6 4.4 9.4 2.5 7.5-1.7 5.6 2.5 1.4 4.4 5.6 6.3zM13.5 14.5l-1.9 4.2-4.2 1.9 4.2 1.9 1.9 4.2 1.9-4.2 4.2-1.9-4.2-1.9z"/>
+                      </svg>
+                      <span id="polish-button-text">AI Polish</span>
+                    </button>
+                  </div>
                   <textarea class="clean-textarea note-transcription-textarea" id="note-transcription" placeholder="No transcription available..."></textarea>
                 </div>
                 <button class="save-btn" id="btn-save-note">Save Changes</button>

@@ -512,7 +512,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #f6f5f0;
+  border-bottom: 1px solid var(--border-light);
   padding-bottom: 12px;
   margin-bottom: 4px;
 }
@@ -625,6 +625,11 @@ body {
   border-color: #c4c2ba;
 }
 
+.clean-copy-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .last-prepared-body-text textarea {
   width: 100%;
   height: 54px;
@@ -655,7 +660,7 @@ body {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  border-bottom: 1px solid #f6f5f0;
+  border-bottom: 1px solid var(--border-light);
   padding-bottom: 10px;
 }
 
@@ -961,7 +966,7 @@ body {
   display: flex;
   align-items: flex-start;
   padding: 14px 18px;
-  border-bottom: 1px solid #f6f5f0;
+  border-bottom: 1px solid var(--border-light);
   transition: background-color 0.2s ease;
   position: relative;
 }
@@ -1107,7 +1112,7 @@ body {
 
 /* Notes Grid Cards Layout */
 .notes-list-grid {
-  display: grid;
+  display: grid !important;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 16px;
   width: 100%;
@@ -1161,7 +1166,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid #f6f5f0;
+  border-top: 1px solid var(--border-light);
   padding-top: 10px;
   margin-top: 4px;
 }
@@ -1328,7 +1333,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #f6f5f0;
+  border-bottom: 1px solid var(--border-light);
   padding-bottom: 14px;
 }
 
@@ -1480,7 +1485,7 @@ body {
 }
 
 .settings-divider {
-  border-top: 1px solid #f6f5f0;
+  border-top: 1px solid var(--border-light);
   margin: 10px 0;
 }
 
@@ -2259,4 +2264,431 @@ body {
   line-height: 1.2;
 }
 
+/* ================================= */
+/* Sidebar Spacer & Dark Mode Toggle */
+/* ================================= */
+.sidebar-spacer {
+  flex: 1;
+}
+
+.dark-mode-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border-light);
+  margin-top: 8px;
+}
+
+.dark-mode-icon {
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.dark-mode-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.dark-mode-switch {
+  flex-shrink: 0;
+}
+
+/* ============================== */
+/* DARK MODE THEME OVERRIDES      */
+/* ============================== */
+[data-theme="dark"] {
+  --bg-main: #0f1117;
+  --bg-sidebar: #12131b;
+  --bg-card: #1a1c28;
+  --bg-input: #1e2030;
+  
+  --border-light: #252838;
+  --border-focus: #eb5e28;
+  
+  --text-primary: #e8e9ed;
+  --text-secondary: #8b8d9a;
+  --text-muted: #5c5e6d;
+  
+  --accent-orange: #eb5e28;
+  --accent-orange-hover: #f06d3d;
+  --accent-orange-light: rgba(235, 94, 40, 0.12);
+  --color-green: #3dbd5c;
+  --color-red: #ef4444;
+}
+
+/* Title bar */
+[data-theme="dark"] .window-header {
+  background-color: var(--bg-sidebar);
+  border-bottom-color: var(--border-light);
+}
+
+[data-theme="dark"] .brand-version {
+  background-color: #1e2030;
+  border-color: #2a2d3e;
+  color: var(--text-secondary);
+}
+
+/* Window controls */
+[data-theme="dark"] .win-btn:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Sidebar */
+[data-theme="dark"] .sidebar {
+  background-color: var(--bg-sidebar);
+  border-right-color: var(--border-light);
+}
+
+[data-theme="dark"] .menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="dark"] .menu-item.active {
+  background-color: var(--bg-card);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Status Pill */
+[data-theme="dark"] .status-pill {
+  background-color: var(--bg-card);
+  border-color: var(--border-light);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .status-pill .indicator-dot {
+  background-color: var(--text-muted);
+}
+
+[data-theme="dark"] .status-pill.recording {
+  border-color: rgba(235, 94, 40, 0.35);
+  background-color: rgba(235, 94, 40, 0.08);
+}
+
+[data-theme="dark"] .status-pill.transcribing {
+  border-color: rgba(168, 85, 247, 0.35);
+  background-color: rgba(168, 85, 247, 0.08);
+}
+
+[data-theme="dark"] .status-pill.pasting {
+  border-color: rgba(61, 189, 92, 0.35);
+  background-color: rgba(61, 189, 92, 0.08);
+}
+
+[data-theme="dark"] .status-pill.error-status {
+  border-color: rgba(239, 68, 68, 0.35);
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+/* Mic trigger button — stays orange, just adjust shadow */
+[data-theme="dark"] .mic-trigger {
+  box-shadow: 0 10px 24px rgba(235, 94, 40, 0.3),
+              0 0 0 0px rgba(235, 94, 40, 0.15);
+}
+
+/* Instruction text */
+[data-theme="dark"] .instruction-text-center {
+  color: var(--text-secondary);
+}
+
+/* Keycaps */
+[data-theme="dark"] .keycap {
+  background-color: #1e2030;
+  border-color: #2a2d3e;
+  border-bottom-color: #1a1c28;
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Cards */
+[data-theme="dark"] .card-item {
+  background-color: var(--bg-card);
+  border-color: var(--border-light);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Quick Controls */
+[data-theme="dark"] .card-header-label {
+  color: var(--text-muted);
+}
+
+/* Select dropdowns */
+[data-theme="dark"] .clean-select,
+[data-theme="dark"] .form-field-input {
+  background-color: var(--bg-input);
+  border-color: var(--border-light);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .clean-select option {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+
+/* Preset badges */
+[data-theme="dark"] .preset-badge,
+[data-theme="dark"] .dashboard-preset-badge {
+  background-color: var(--bg-input);
+  border-color: var(--border-light);
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .preset-badge:hover,
+[data-theme="dark"] .dashboard-preset-badge:hover {
+  background-color: rgba(235, 94, 40, 0.08);
+  border-color: var(--accent-orange);
+}
+
+[data-theme="dark"] .preset-badge.active,
+[data-theme="dark"] .dashboard-preset-badge.active {
+  background-color: rgba(235, 94, 40, 0.12);
+  border-color: var(--accent-orange);
+  color: var(--accent-orange);
+}
+
+/* Text area */
+[data-theme="dark"] .clean-textarea {
+  background-color: var(--bg-input);
+  border-color: var(--border-light);
+  color: var(--text-primary);
+}
+
+/* Buttons */
+[data-theme="dark"] .clean-copy-btn {
+  background-color: var(--bg-input);
+  border-color: var(--border-light);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .clean-copy-btn:hover {
+  background-color: #262840;
+  border-color: var(--accent-orange);
+}
+
+[data-theme="dark"] .clear-all-btn {
+  background-color: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+[data-theme="dark"] .save-btn {
+  box-shadow: 0 6px 14px rgba(235, 94, 40, 0.25);
+}
+
+/* History */
+[data-theme="dark"] .history-group-header {
+  background-color: #14151e;
+  border-color: var(--border-light);
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .history-row {
+  border-bottom-color: var(--border-light);
+}
+
+[data-theme="dark"] .history-row:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+[data-theme="dark"] .history-search-input {
+  background-color: var(--bg-input);
+  border-color: var(--border-light);
+  color: var(--text-primary);
+}
+
+/* Note Cards */
+[data-theme="dark"] .note-card {
+  background-color: var(--bg-card);
+  border-color: var(--border-light);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .note-card:hover {
+  border-color: var(--accent-orange);
+  box-shadow: 0 8px 16px rgba(235, 94, 40, 0.08);
+}
+
+
+
+/* Note Detail */
+[data-theme="dark"] .note-audio-player-bar {
+  background-color: var(--bg-input);
+  border-color: var(--border-light);
+}
+
+[data-theme="dark"] audio {
+  filter: invert(1);
+}
+
+/* Note ready notification */
+[data-theme="dark"] .note-ready-notification {
+  background-color: var(--bg-card);
+  border-color: rgba(235, 94, 40, 0.2);
+}
+
+/* Toast */
+[data-theme="dark"] .toast {
+  background-color: #1e2030;
+  border-color: var(--border-light);
+  color: var(--text-primary);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Settings sub-tabs */
+[data-theme="dark"] .sub-tab-trigger {
+  color: var(--text-secondary);
+  border-bottom-color: transparent;
+}
+
+[data-theme="dark"] .sub-tab-trigger.active {
+  color: var(--accent-orange);
+  border-bottom-color: var(--accent-orange);
+}
+
+[data-theme="dark"] .sub-tab-trigger:hover {
+  color: var(--text-primary);
+}
+
+/* Switch toggle in dark mode — make the checked slider orange */
+[data-theme="dark"] .switch-slider {
+  background-color: #2a2d3e;
+}
+
+[data-theme="dark"] .switch-toggle input:checked + .switch-slider {
+  background-color: var(--accent-orange);
+  border-color: var(--accent-orange);
+}
+
+[data-theme="dark"] .switch-toggle input:checked + .switch-slider::before {
+  background-color: #ffffff;
+}
+
+[data-theme="dark"] .checkbox-setting-row {
+  background-color: var(--bg-input);
+}
+
+[data-theme="dark"] .recording-visualizer {
+  background-color: var(--bg-input);
+}
+
+/* Mic test bar */
+[data-theme="dark"] .mic-test-meter {
+  background-color: var(--bg-input);
+}
+
+[data-theme="dark"] .test-mic-btn {
+  background-color: var(--bg-input);
+  border-color: var(--border-light);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .test-mic-btn.testing {
+  background-color: rgba(235, 94, 40, 0.12);
+  border-color: var(--accent-orange);
+}
+
+/* Performance advisor */
+[data-theme="dark"] .performance-advisor {
+  background-color: var(--bg-input);
+  border-color: var(--border-light);
+}
+
+/* Offline model cards */
+[data-theme="dark"] .offline-active-model-card {
+  background-color: var(--bg-input);
+  border-color: var(--border-light);
+}
+
+[data-theme="dark"] .model-card {
+  background-color: var(--bg-card);
+  border-color: var(--border-light);
+}
+
+/* Hotkeys visual display */
+[data-theme="dark"] .shortcut-card {
+  background-color: var(--bg-card);
+  border-color: var(--border-light);
+}
+
+[data-theme="dark"] .hotkey-visual-display {
+  background-color: var(--bg-input);
+  border-color: var(--border-light);
+}
+
+[data-theme="dark"] .visual-keycap {
+  background-color: #1e2030;
+  border-color: #2a2d3e;
+  border-bottom-color: #1a1c28;
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .reset-defaults-btn {
+  background-color: #1e2030;
+  border-color: #2a2d3e;
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .reset-defaults-btn:hover {
+  background-color: #262840;
+  border-color: #353850;
+}
+
+/* Refinement option cards */
+[data-theme="dark"] .refinement-option-card {
+  background-color: var(--bg-input);
+  border-color: var(--border-light);
+}
+
+[data-theme="dark"] .refinement-option:hover .refinement-option-card {
+  background-color: rgba(235, 94, 40, 0.06);
+}
+
+[data-theme="dark"] .refinement-option input[type="radio"]:checked + .refinement-option-card {
+  background-color: rgba(235, 94, 40, 0.1);
+  border-color: var(--accent-orange);
+}
+
+/* Modal overlay */
+[data-theme="dark"] .note-title-modal-overlay,
+[data-theme="dark"] .note-recording-modal-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .modal-card {
+  background-color: var(--bg-card);
+  border-color: var(--border-light);
+}
+
+/* Tooltip */
+[data-theme="dark"] .app-tooltip {
+  background-color: #1e2030;
+  border-color: var(--border-light);
+  color: var(--text-primary);
+}
+
+/* Password toggle button */
+[data-theme="dark"] .password-toggle-btn {
+  background-color: var(--bg-input);
+  border-color: var(--border-light);
+}
+
+/* Select wrapper arrow */
+[data-theme="dark"] .select-wrapper::after {
+  color: var(--text-muted);
+}
+
+/* Scrollbar dark mode */
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #2a2d3e;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #353850;
+}
 

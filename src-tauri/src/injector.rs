@@ -14,6 +14,17 @@ use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
 static LAST_ACTIVE_HWND: AtomicIsize = AtomicIsize::new(0);
 
 #[cfg(target_os = "windows")]
+use std::sync::atomic::AtomicBool;
+
+#[cfg(target_os = "windows")]
+static WAS_FOCUSED_ON_MURMUR: AtomicBool = AtomicBool::new(false);
+
+#[cfg(target_os = "windows")]
+pub fn set_was_focused_on_murmur(val: bool) {
+    WAS_FOCUSED_ON_MURMUR.store(val, Ordering::SeqCst);
+}
+
+#[cfg(target_os = "windows")]
 pub fn start_focus_tracker() {
     thread::spawn(|| {
         unsafe {
@@ -161,28 +172,37 @@ fn inject_via_clipboard(text: &str) -> Result<(), String> {
 
 #[cfg(target_os = "windows")]
 pub fn inject_text(text: &str) -> Result<(), String> {
-    // Restore focus to the last active window before injecting
-    let target_hwnd = LAST_ACTIVE_HWND.load(Ordering::SeqCst);
-    if target_hwnd != 0 {
-        unsafe {
-            windows_sys::Win32::UI::WindowsAndMessaging::SetForegroundWindow(target_hwnd);
-            // Give Windows a tiny moment to switch focus
-            thread::sleep(Duration::from_millis(100));
+    // Restore focus to the last active window before injecting if we weren't focused on Murmur
+    if !WAS_FOCUSED_ON_MURMUR.load(Ordering::SeqCst) {
+        let target_hwnd = LAST_ACTIVE_HWND.load(Ordering::SeqCst);
+        if target_hwnd != 0 {
+            unsafe {
+                windows_sys::Win32::UI::WindowsAndMessaging::SetForegroundWindow(target_hwnd);
+                // Give Windows a tiny moment to switch focus
+                thread::sleep(Duration::from_millis(100));
+            }
         }
     }
 
     // Try clipboard injection first as it is much more reliable for modern Windows apps (like Notepad)
-    match inject_via_clipboard(text) {
+    let res = match inject_via_clipboard(text) {
         Ok(_) => Ok(()),
         Err(e) => {
             eprintln!("Clipboard injection failed: {}. Falling back to direct Unicode injection.", e);
             inject_via_unicode(text)
         }
-    }
+    };
+
+    // Reset the flag for the next dictation session
+    WAS_FOCUSED_ON_MURMUR.store(false, Ordering::SeqCst);
+    res
 }
 
 #[cfg(not(target_os = "windows"))]
 pub fn start_focus_tracker() {}
+
+#[cfg(not(target_os = "windows"))]
+pub fn set_was_focused_on_murmur(_val: bool) {}
 
 #[cfg(not(target_os = "windows"))]
 pub fn inject_text(text: &str) -> Result<(), String> {

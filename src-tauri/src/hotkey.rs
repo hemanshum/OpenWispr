@@ -354,7 +354,7 @@ unsafe extern "system" fn low_level_keyboard_proc(
                 }
             } else if *active == Some(RecordingType::Transcribe) {
                 if let Some(ref tx) = SENDER {
-                    let _ = tx.send(HotkeyEvent::Released(RecordingType::Transcribe));
+                    let _ = tx.send(HotkeyEvent::Cancelled(RecordingType::Transcribe));
                     let _ = tx.send(HotkeyEvent::Pressed(RecordingType::Notes));
                 }
                 *active = Some(RecordingType::Notes);
@@ -367,7 +367,7 @@ unsafe extern "system" fn low_level_keyboard_proc(
                 }
             } else if *active == Some(RecordingType::Notes) {
                 if let Some(ref tx) = SENDER {
-                    let _ = tx.send(HotkeyEvent::Released(RecordingType::Notes));
+                    let _ = tx.send(HotkeyEvent::Cancelled(RecordingType::Notes));
                     let _ = tx.send(HotkeyEvent::Pressed(RecordingType::Transcribe));
                 }
                 *active = Some(RecordingType::Transcribe);

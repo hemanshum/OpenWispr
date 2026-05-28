@@ -144,6 +144,8 @@ const noteAudioElement = document.getElementById("note-audio-element");
 const btnCopyTranscription = document.getElementById("btn-copy-transcription");
 const noteTranscription = document.getElementById("note-transcription");
 const btnSaveNote = document.getElementById("btn-save-note");
+const btnPolishNote = document.getElementById("btn-polish-note");
+const polishButtonText = document.getElementById("polish-button-text");
 const notesList = document.getElementById("notes-list");
 const notesEmpty = document.getElementById("notes-empty");
 const notesCount = document.getElementById("notes-count");
@@ -172,6 +174,19 @@ let isTestingMic = false;
 let micLevelUnlisten = null;
 let recordingMicLevel = 0;
 let currentAmpScale = 0.1;
+let noteAmpScale = 0.1;
+
+// Track which notes have been polished (by ID) via localStorage
+let polishedNoteIds = JSON.parse(localStorage.getItem("murmur_polished_notes") || "[]");
+function markNoteAsPolished(noteId) {
+  if (!polishedNoteIds.includes(noteId)) {
+    polishedNoteIds.push(noteId);
+    localStorage.setItem("murmur_polished_notes", JSON.stringify(polishedNoteIds));
+  }
+}
+function isNotePolished(noteId) {
+  return polishedNoteIds.includes(noteId);
+}
 
 // Dynamic Stats Tracking State
 let totalWords = parseInt(localStorage.getItem("murmur_total_words") || "755", 10);
@@ -237,11 +252,11 @@ document.addEventListener("mousedown", () => {
   invoke("set_window_focusable", { focusable: true }).catch((err) => console.error(err));
 });
 
-// Auto-disable focusability on blur if dashboard is active to behave as background helper
+// Auto-disable focusability on blur so hotkeys work for other apps
 window.addEventListener("blur", () => {
-  if (tabDash.classList.contains("active")) {
-    invoke("set_window_focusable", { focusable: false }).catch((err) => console.error(err));
-  }
+  // Don't unfocus if we're actively recording a note (modal is open)
+  if (isRecordingNote) return;
+  invoke("set_window_focusable", { focusable: false }).catch((err) => console.error(err));
 });
 
 // Tab Switcher
@@ -1799,6 +1814,37 @@ async function init() {
   await loadHistory();
   await updateLastPreparedFromHistory();
   await loadNotesCount();
+
+  // Initialize dark mode from saved preference
+  initDarkMode();
+}
+
+// =====================
+// DARK MODE LOGIC
+// =====================
+function initDarkMode() {
+  const darkModeCheckbox = document.getElementById("dark-mode-checkbox");
+  const savedTheme = localStorage.getItem("murmur_theme") || "light";
+
+  if (savedTheme === "dark") {
+    document.documentElement.setAttribute("data-theme", "dark");
+    if (darkModeCheckbox) darkModeCheckbox.checked = true;
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+    if (darkModeCheckbox) darkModeCheckbox.checked = false;
+  }
+
+  if (darkModeCheckbox) {
+    darkModeCheckbox.addEventListener("change", () => {
+      if (darkModeCheckbox.checked) {
+        document.documentElement.setAttribute("data-theme", "dark");
+        localStorage.setItem("murmur_theme", "dark");
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+        localStorage.setItem("murmur_theme", "light");
+      }
+    });
+  }
 }
 
 function calculateStreakFromHistory(entries) {
@@ -2013,31 +2059,40 @@ function renderHistory(entries) {
 }
 
 function formatTimestamp(tsString) {
-  // SQLite format: "2026-05-21 22:34:56"
   try {
-    const parts = tsString.split(" ");
-    if (parts.length < 2) return tsString;
-    const dateParts = parts[0].split("-");
-    const timeParts = parts[1].split(":");
-    if (dateParts.length !== 3 || timeParts.length < 2) return tsString;
-    
-    const year = parseInt(dateParts[0], 10);
-    const month = parseInt(dateParts[1], 10) - 1;
-    const day = parseInt(dateParts[2], 10);
-    const hour = parseInt(timeParts[0], 10);
-    const minute = parseInt(timeParts[1], 10);
-    
-    const date = new Date(year, month, day, hour, minute);
-    
-    return date.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    }) + ' at ' + date.toLocaleTimeString(undefined, {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
+    if (!tsString) return "";
+    let date;
+    if (tsString.includes("T")) {
+      date = new Date(tsString);
+    } else {
+      // SQLite format: "2026-05-21 22:34:56"
+      const parts = tsString.split(" ");
+      if (parts.length >= 2) {
+        const dateParts = parts[0].split("-");
+        const timeParts = parts[1].split(":");
+        if (dateParts.length === 3 && timeParts.length >= 2) {
+          const year = parseInt(dateParts[0], 10);
+          const month = parseInt(dateParts[1], 10) - 1;
+          const day = parseInt(dateParts[2], 10);
+          const hour = parseInt(timeParts[0], 10);
+          const minute = parseInt(timeParts[1], 10);
+          date = new Date(year, month, day, hour, minute);
+        }
+      }
+    }
+
+    if (date && !isNaN(date.getTime())) {
+      return date.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      }) + ' at ' + date.toLocaleTimeString(undefined, {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    }
+    return tsString;
   } catch (e) {
     return tsString;
   }
@@ -2072,7 +2127,7 @@ function renderNotesList(notes) {
   }
 
   notesEmpty.style.display = "none";
-  notesList.style.display = "flex";
+  notesList.style.display = "grid";
 
   notes.forEach((note) => {
     const card = document.createElement("div");
@@ -2246,6 +2301,11 @@ async function stopNoteRecording() {
     pendingNoteTitle = "";
     noteRecordingModal.style.display = "none";
 
+    // Track polished status for this note
+    if (pendingNoteRefinement === "polished" && note && note.id) {
+      markNoteAsPolished(note.id);
+    }
+
     // Reload notes list (note will show with "Transcribing..." placeholder)
     await loadNotes();
     loadNotesCount();
@@ -2289,6 +2349,16 @@ async function openNoteDetail(noteId) {
     }
     const audioUrl = convertFileSrc(cleanPath);
     noteAudioElement.src = audioUrl;
+
+    // Show or hide AI Polish button based on whether note was already polished
+    if (btnPolishNote) {
+      const transcriptionText = note.transcription || "";
+      if (isNotePolished(noteId) || transcriptionText === "Transcribing...") {
+        btnPolishNote.style.display = "none";
+      } else {
+        btnPolishNote.style.display = "flex";
+      }
+    }
   } catch (err) {
     console.error("Failed to load note:", err);
     showToast(`Failed to load note: ${err}`, true);
@@ -2377,14 +2447,19 @@ function drawNoteWaveform() {
   const barWidth = width / barCount;
   const gap = 2;
 
+  // Smooth amplitude scaling based on mic level
+  let targetScale = isPaused ? 0.0 : (recordingMicLevel / 100.0);
+  noteAmpScale += (targetScale - noteAmpScale) * 0.15;
+  const amp = isPaused ? 0.04 : Math.max(0.06, noteAmpScale);
+
   for (let i = 0; i < barCount; i++) {
     const x = i * barWidth + gap / 2;
 
-    // Simulate waveform with sine wave + noise
+    // Simulate waveform with sine wave + noise, but scale by amp
     const time = Date.now() / 200;
     const baseHeight = Math.sin(time + i * 0.3) * 0.3 + 0.5;
-    const noise = (Math.random() - 0.5) * 0.3;
-    const barHeight = (baseHeight + noise) * height * 0.6;
+    const noise = (Math.random() - 0.5) * 0.2;
+    const barHeight = (baseHeight + noise) * height * 0.65 * amp;
 
     const gradient = noteCtx.createLinearGradient(0, centerY - barHeight / 2, 0, centerY + barHeight / 2);
     gradient.addColorStop(0, "rgba(168, 85, 247, 0.8)");
@@ -2392,7 +2467,7 @@ function drawNoteWaveform() {
     gradient.addColorStop(1, "rgba(168, 85, 247, 0.8)");
 
     noteCtx.fillStyle = gradient;
-    noteCtx.fillRect(x, centerY - barHeight / 2, barWidth - gap, barHeight);
+    noteCtx.fillRect(x, centerY - barHeight / 2, barWidth - gap, Math.max(2, barHeight));
   }
 
   requestAnimationFrame(drawNoteWaveform);
@@ -2445,6 +2520,50 @@ if (btnSaveNote) {
 
 if (btnCopyTranscription) {
   btnCopyTranscription.addEventListener("click", copyTranscription);
+}
+
+if (btnPolishNote) {
+  btnPolishNote.addEventListener("click", async () => {
+    if (!currentNoteId) return;
+
+    const originalText = noteTranscription.value || "";
+    if (!originalText.trim() || originalText === "Transcribing...") {
+      showToast("No text to polish", true);
+      return;
+    }
+
+    try {
+      btnPolishNote.disabled = true;
+      if (polishButtonText) polishButtonText.textContent = "Polishing...";
+      showToast("Polishing note text...");
+
+      // Call backend LLM polish command
+      const polishedText = await invoke("polish_voice_note_text", { text: originalText });
+
+      // Update UI text area
+      noteTranscription.value = polishedText;
+
+      // Update note in database
+      const noteTitle = noteTitleInput.value || "Untitled Note";
+      await invoke("update_voice_note", {
+        id: currentNoteId,
+        title: noteTitle,
+        transcription: polishedText
+      });
+
+      showToast("Note polished successfully!");
+
+      // Mark as polished and hide the button
+      markNoteAsPolished(currentNoteId);
+      btnPolishNote.style.display = "none";
+    } catch (err) {
+      console.error("Polishing failed:", err);
+      showToast(`Polishing failed: ${err}`, true);
+    } finally {
+      btnPolishNote.disabled = false;
+      if (polishButtonText) polishButtonText.textContent = "AI Polish";
+    }
+  });
 }
 
 // Note Ready Notification — click to view the note

@@ -209,6 +209,15 @@ async fn stop_voice_note_recording_bg(
     Ok(note)
 }
 
+#[tauri::command]
+async fn polish_voice_note_text(
+    app_handle: AppHandle,
+    text: String,
+) -> Result<String, String> {
+    let api_config = AppConfig::load(&app_handle);
+    refine_text_internal(&text, &api_config).await
+}
+
 async fn transcribe_for_note(app_handle: &AppHandle, audio_path: &str) -> Result<String, String> {
     let api_config = AppConfig::load(app_handle);
     let tx_provider = api_config.transcription_provider.to_string();
@@ -282,6 +291,19 @@ async fn transcribe_for_note(app_handle: &AppHandle, audio_path: &str) -> Result
 fn start_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(), String> {
     if state.is_recording.load(Ordering::SeqCst) {
         return Ok(());
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let hwnd = unsafe { windows_sys::Win32::UI::WindowsAndMessaging::GetForegroundWindow() };
+        let mut pid = 0;
+        if hwnd != 0 {
+            unsafe {
+                windows_sys::Win32::UI::WindowsAndMessaging::GetWindowThreadProcessId(hwnd, &mut pid);
+            }
+        }
+        let current_pid = unsafe { windows_sys::Win32::System::Threading::GetCurrentProcessId() };
+        crate::injector::set_was_focused_on_murmur(pid == current_pid);
     }
 
     let mut recorder = state.recorder.lock().map_err(|e| format!("Lock error: {}", e))?;
@@ -881,7 +903,8 @@ pub fn run() {
             get_audio_file_url,
             start_voice_note_recording,
             stop_voice_note_recording,
-            stop_voice_note_recording_bg
+            stop_voice_note_recording_bg,
+            polish_voice_note_text
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
