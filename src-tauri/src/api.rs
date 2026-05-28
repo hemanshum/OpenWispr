@@ -856,3 +856,339 @@ fn emit_status(app_handle: &AppHandle, status: &str) {
     let _ = app_handle.emit("status-changed", status);
 }
 
+pub async fn refine_with_local_llm(
+    app_handle: &AppHandle,
+    model_id: &str,
+    prompt: &str,
+    raw_text: &str,
+    language: &str,
+    thinking: bool,
+) -> Result<String, String> {
+    // Resolve config dir and model path
+    let config_dir = app_handle
+        .path()
+        .app_config_dir()
+        .map_err(|e| format!("Failed to get config directory: {}", e))?;
+
+    // 1. Ensure llama-cli binary is present (download on first use)
+    let llama_cli = ensure_llama_cli(&config_dir, app_handle).await?;
+
+    // 2. Find the .gguf file in the model directory
+    let model_dir = config_dir.join("models").join(model_id);
+    if !model_dir.exists() {
+        return Err(format!(
+            "Refinement model '{}' is not downloaded. Please download it from Settings > Models.",
+            model_id
+        ));
+    }
+
+    let gguf_file = std::fs::read_dir(&model_dir)
+        .map_err(|e| format!("Failed to read model directory: {}", e))?
+        .filter_map(|entry| entry.ok())
+        .find(|entry| {
+            entry.path().extension()
+                .map(|ext| ext.to_string_lossy().to_lowercase() == "gguf")
+                .unwrap_or(false)
+        })
+        .ok_or_else(|| format!("No .gguf model file found in {}", model_dir.display()))?;
+
+    let model_path_str = gguf_file.path().to_string_lossy().to_string();
+
+    emit_status(app_handle, "Refining");
+
+    // 3. Build prompts — using system prompt and user prompt designed for chat/conversation mode
+    let language_name = get_language_name(language);
+    let system_prompt = if language_name == "English" {
+        "You are an expert editor. Rewrite the transcript to be clear, clean, and grammatically correct. \
+         Remove all filler words (uh, um, ah, like) and backtracking. \
+         Write everything strictly in English. Do not translate. \
+         Never reply with chat greetings, explanations, or notes. Return only the cleaned text."
+            .to_string()
+    } else if language_name == "Hindi" {
+        "You are an expert editor. Rewrite the transcript to be clear, clean, and grammatically correct. \
+         Remove all filler words (uh, um, ah, like) and backtracking. \
+         Convert all Hindi words written in Roman script to Devanagari script. \
+         Keep all English words in Latin script. Do not translate Hindi to English or English to Hindi. \
+         Never reply with chat greetings, explanations, or notes. Return only the cleaned text."
+            .to_string()
+    } else {
+        format!(
+            "You are an expert editor. Rewrite the transcript to be clear, clean, and grammatically correct. \
+             Remove all filler words (uh, um, ah, like) and backtracking. \
+             Keep all original {} words in their native script. Keep English in Latin script. Do not translate. \
+             Never reply with chat greetings, explanations, or notes. Return only the cleaned text.",
+            language_name
+        )
+    };
+
+    let user_prompt = if prompt.is_empty() {
+        format!(
+            "Clean up this text. Remove all filler words (like \"um\", \"uh\", \"ah\"), fix repetitions, and correct grammar and punctuation. Do not add any extra text or quotes around the response. Return only the cleaned text.\n\nText: \"{}\"",
+            raw_text
+        )
+    } else {
+        format!(
+            "Clean up this text. Remove all filler words (like \"um\", \"uh\", \"ah\"), fix repetitions, and correct grammar and punctuation. Do not add any extra text or quotes around the response. Return only the cleaned text.\n\nUser Instruction: {}\n\nText: \"{}\"",
+            prompt,
+            raw_text
+        )
+    };
+
+    // 4. Run llama-cli in chat/conversation mode (which formats prompt with model's native template)
+    // -sys/--system-prompt  = sets the system prompt
+    // -p/--prompt           = sets the user input
+    // -st/--single-turn     = run for one turn then exit immediately (prevents interactive hang)
+    // --no-display-prompt   = do not echo the prompt to stdout (leaves only generated response)
+    let mut command = tokio::process::Command::new(&llama_cli);
+    #[cfg(windows)]
+    command.creation_flags(0x08000000);
+    command
+        .arg("--model").arg(&model_path_str)
+        .arg("-sys").arg(&system_prompt)
+        .arg("-p").arg(&user_prompt)
+        .arg("--n-predict").arg("1024")
+        .arg("--ctx-size").arg("4096")
+        .arg("--temp").arg("0.2")
+        .arg("--threads").arg(num_cpus_half().to_string())
+        .arg("-st")
+        .arg("--no-display-prompt")
+        .stdin(std::process::Stdio::null())     // no stdin → can never go interactive
+        .stderr(std::process::Stdio::null());   // discard verbose llama.cpp logs
+
+    if !thinking {
+        command.arg("--reasoning-budget").arg("0");
+    }
+
+    let output = tokio::time::timeout(
+        std::time::Duration::from_secs(120),
+        command.output(),
+    )
+    .await
+    .map_err(|_| "llama-cli timed out after 120s".to_string())?
+    .map_err(|e| format!("Failed to run llama-cli: {}", e))?;
+
+    let stdout_raw = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr_raw = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if !output.status.success() {
+        let diag = [stderr_raw.trim(), stdout_raw.trim()]
+            .iter()
+            .find(|s| !s.is_empty())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| format!("exit code {:?}", output.status.code()));
+        return Err(format!("llama-cli failed: {}", diag));
+    }
+
+    eprintln!("[DEBUG] stdout_raw ({} bytes): {:?}", stdout_raw.len(), &stdout_raw[..stdout_raw.len().min(500)]);
+
+    let mut result = stdout_raw.trim().to_string();
+
+    // Strip <think>...</think> blocks if model emitted them
+    if result.contains("<think>") {
+        if let Some(s) = result.find("<think>") {
+            if let Some(e) = result.find("</think>") {
+                result = format!("{}{}", &result[..s], result[e + "</think>".len()..].trim());
+            } else {
+                result = result[..s].trim().to_string();
+            }
+        }
+    }
+
+    // Trim any trailing stop/special tokens and junk generated by LLM
+    for token in &[
+        "[end of text]",
+        "<|endoftext|>",
+        "<|im_end|>",
+        "</s>",
+        "[/INST]",
+        "[INST]",
+        "Raw transcript:",
+    ] {
+        if let Some(pos) = result.find(token) {
+            result.truncate(pos);
+        }
+    }
+
+    // Strip wrapping quotes (first pass)
+    result = result.trim().to_string();
+    if (result.starts_with('"') && result.ends_with('"')) || (result.starts_with('\'') && result.ends_with('\'')) {
+        if result.len() >= 2 {
+            result = result[1..result.len() - 1].trim().to_string();
+        }
+    }
+
+    // Clean up common prefixes at the start of the output
+    for prefix in &[
+        "Cleaned text:",
+        "Cleaned transcript:",
+        "Refined text:",
+        "Refined transcript:",
+        "Here is the cleaned text:",
+        "Here is the refined text:",
+        "Here is the cleaned transcript:",
+        "Here is the refined transcript:",
+    ] {
+        if result.to_lowercase().starts_with(&prefix.to_lowercase()) {
+            result = result[prefix.len()..].trim().to_string();
+        }
+    }
+
+    // Strip wrapping quotes (second pass, in case they were inside the prefix)
+    result = result.trim().to_string();
+    if (result.starts_with('"') && result.ends_with('"')) || (result.starts_with('\'') && result.ends_with('\'')) {
+        if result.len() >= 2 {
+            result = result[1..result.len() - 1].trim().to_string();
+        }
+    }
+
+    // Strip trailing code-fence repetition (``` ``` ``` ...) Qwen3 sometimes emits
+    let lines: Vec<&str> = result.lines().collect();
+    let clean_lines: Vec<&str> = lines.iter()
+        .rev()
+        .skip_while(|l| l.trim() == "```" || l.trim().is_empty())
+        .cloned()
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect();
+    result = clean_lines.join("\n");
+
+    let final_result = result.trim().to_string();
+    eprintln!("[DEBUG] Final result ({} chars): {:?}", final_result.len(), &final_result[..final_result.len().min(200)]);
+    
+    if final_result.is_empty() {
+        eprintln!("[WARNING] Local LLM refinement returned empty result. Falling back to raw transcript.");
+        Ok(raw_text.to_string())
+    } else {
+        Ok(final_result)
+    }
+}
+
+fn num_cpus_half() -> usize {
+    let cpus = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(4);
+    (cpus / 2).max(1)
+}
+
+/// Downloads llama-cli + companion DLLs from official llama.cpp GitHub releases on first use.
+/// Extracts everything into <config_dir>/llama_bin/ so the DLLs are alongside the binary.
+async fn ensure_llama_cli(
+    config_dir: &std::path::Path,
+    app_handle: &AppHandle,
+) -> Result<std::path::PathBuf, String> {
+    #[cfg(windows)]
+    let binary_name = "llama-cli.exe";
+    #[cfg(not(windows))]
+    let binary_name = "llama-cli";
+
+    // Store everything in a dedicated subdirectory so DLLs stay next to the binary
+    let bin_dir = config_dir.join("llama_bin");
+    let bin_path = bin_dir.join(binary_name);
+
+    // Remove any old single-file extraction that would be missing DLLs
+    if config_dir.join(binary_name).exists() && !bin_path.exists() {
+        let _ = std::fs::remove_file(config_dir.join(binary_name));
+    }
+
+    if bin_path.exists() {
+        return Ok(bin_path);
+    }
+
+    emit_status(app_handle, "Downloading LLM engine...");
+
+    #[cfg(windows)]
+    let download_url = "https://github.com/ggml-org/llama.cpp/releases/download/b5618/llama-b5618-bin-win-cpu-x64.zip";
+    #[cfg(not(windows))]
+    let download_url = "https://github.com/ggml-org/llama.cpp/releases/download/b5618/llama-b5618-bin-ubuntu-x64.zip";
+
+    let zip_path = config_dir.join("llama_cli_tmp.zip");
+
+    // Download
+    let response = reqwest::get(download_url)
+        .await
+        .map_err(|e| format!("Failed to download llama engine: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("Failed to download llama engine: HTTP {}", response.status()));
+    }
+
+    let bytes = response.bytes()
+        .await
+        .map_err(|e| format!("Failed to read llama engine download: {}", e))?;
+
+    std::fs::write(&zip_path, &bytes)
+        .map_err(|e| format!("Failed to save llama engine zip: {}", e))?;
+
+    // Extract ALL files from the zip into bin_dir (DLLs must be alongside the binary)
+    let _ = std::fs::create_dir_all(&bin_dir);
+    let zip_file = std::fs::File::open(&zip_path)
+        .map_err(|e| format!("Failed to open zip: {}", e))?;
+    let mut archive = zip::ZipArchive::new(zip_file)
+        .map_err(|e| format!("Failed to read zip archive: {}", e))?;
+
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i)
+            .map_err(|e| format!("Zip read error: {}", e))?;
+
+        if file.is_dir() {
+            continue;
+        }
+
+        // Flatten the path — just use the filename, no subdirectory structure
+        let file_name = std::path::Path::new(file.name())
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default();
+
+        if file_name.is_empty() {
+            continue;
+        }
+
+        // Only extract executables and DLLs / shared libraries
+        let ext = std::path::Path::new(&file_name)
+            .extension()
+            .map(|e| e.to_string_lossy().to_lowercase())
+            .unwrap_or_default();
+
+        let is_relevant = matches!(ext.as_str(), "exe" | "dll" | "so" | "dylib" | "")
+            || file_name == "llama-cli";
+
+        if !is_relevant {
+            continue;
+        }
+
+        let dest = bin_dir.join(&file_name);
+        let mut out = std::fs::File::create(&dest)
+            .map_err(|e| format!("Failed to create {}: {}", file_name, e))?;
+        std::io::copy(&mut file, &mut out)
+            .map_err(|e| format!("Failed to extract {}: {}", file_name, e))?;
+    }
+
+    // Cleanup zip
+    let _ = std::fs::remove_file(&zip_path);
+
+    if !bin_path.exists() {
+        return Err(format!(
+            "llama-cli binary not found after extraction. Expected: {}",
+            bin_path.display()
+        ));
+    }
+
+    // Make executable on Unix
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = std::fs::metadata(&bin_path)
+            .map_err(|e| e.to_string())?
+            .permissions();
+        perms.set_mode(0o755);
+        std::fs::set_permissions(&bin_path, perms)
+            .map_err(|e| e.to_string())?;
+    }
+
+    emit_status(app_handle, "LLM engine ready");
+    Ok(bin_path)
+}
+
+

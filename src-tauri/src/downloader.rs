@@ -83,6 +83,31 @@ pub fn get_model_files(model_id: &str) -> Result<Vec<ModelFileInfo>, String> {
                 url: "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-small/resolve/main/small-tokens.txt",
             },
         ]),
+        // ===== Refinement LLM Models (GGUF) =====
+        "qwen3_0_6b" => Ok(vec![
+            ModelFileInfo {
+                name: "Qwen3-0.6B-Q4_K_M.gguf",
+                url: "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/main/Qwen_Qwen3-0.6B-Q4_K_M.gguf",
+            },
+        ]),
+        "qwen2_5_0_5b" => Ok(vec![
+            ModelFileInfo {
+                name: "Qwen2.5-0.5B-Instruct-Q4_K_M.gguf",
+                url: "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf",
+            },
+        ]),
+        "gemma3_1b" => Ok(vec![
+            ModelFileInfo {
+                name: "google_gemma-3-1b-it-Q4_K_M.gguf",
+                url: "https://huggingface.co/bartowski/google_gemma-3-1b-it-GGUF/resolve/main/google_gemma-3-1b-it-Q4_K_M.gguf",
+            },
+        ]),
+        "llama3_2_1b" => Ok(vec![
+            ModelFileInfo {
+                name: "Llama-3.2-1B-Instruct-Q4_K_M.gguf",
+                url: "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf",
+            },
+        ]),
         _ => Err(format!("Unsupported model ID: {}", model_id)),
     }
 }

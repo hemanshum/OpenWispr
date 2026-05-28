@@ -263,7 +263,7 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
                         &transcription_language,
                     ).await {
                         Ok(raw_text) => {
-                            refine_text_internal(&raw_text, &api_config).await
+                            refine_text_internal(&app_handle_clone, &raw_text, &api_config).await
                         }
                         Err(e) => Err(e),
                     }
@@ -276,7 +276,7 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
                             &transcription_language,
                         ).await {
                             Ok(raw_text) => {
-                                refine_text_internal(&raw_text, &api_config).await
+                                refine_text_internal(&app_handle_clone, &raw_text, &api_config).await
                             }
                             Err(e) => Err(e),
                         }
@@ -293,7 +293,7 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
                     &transcription_language,
                 ).await {
                     Ok(raw_text) => {
-                        refine_text_internal(&raw_text, &api_config).await
+                        refine_text_internal(&app_handle_clone, &raw_text, &api_config).await
                     }
                     Err(e) => Err(e),
                 }
@@ -305,7 +305,7 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
                     &transcription_language,
                 ).await {
                     Ok(raw_text) => {
-                        refine_text_internal(&raw_text, &api_config).await
+                        refine_text_internal(&app_handle_clone, &raw_text, &api_config).await
                     }
                     Err(e) => Err(e),
                 }
@@ -323,7 +323,7 @@ fn stop_recording_internal(app_handle: &AppHandle, state: &AppState) -> Result<(
                         &transcription_language,
                     ).await {
                         Ok(raw_text) => {
-                            refine_text_internal(&raw_text, &api_config).await
+                            refine_text_internal(&app_handle_clone, &raw_text, &api_config).await
                         }
                         Err(e) => Err(e),
                     }
@@ -433,6 +433,7 @@ fn resume_recording(state: State<'_, AppState>) -> Result<(), String> {
 }
 
 async fn refine_text_internal(
+    app_handle: &AppHandle,
     raw_text: &str,
     config: &AppConfig,
 ) -> Result<String, String> {
@@ -499,6 +500,16 @@ async fn refine_text_internal(
                 &config.transcription_language,
             ).await
         }
+        "local_llm" => {
+            crate::api::refine_with_local_llm(
+                app_handle,
+                &config.local_refine_model,
+                &config.prompt,
+                raw_text,
+                &config.transcription_language,
+                config.local_llm_thinking,
+            ).await
+        }
         _ => Ok(raw_text.to_string()),
     }
 }
@@ -536,6 +547,11 @@ pub fn run() {
                 let script_path = config_dir.join("transcribe_sherpa.py");
                 let script_content = include_str!("transcribe_sherpa.py");
                 let _ = std::fs::write(&script_path, script_content);
+
+                // Write refine_llm.py for offline LLM refinement
+                let refine_script_path = config_dir.join("refine_llm.py");
+                let refine_script_content = include_str!("refine_llm.py");
+                let _ = std::fs::write(&refine_script_path, refine_script_content);
             }
 
             let config = AppConfig::load(&app_handle);
@@ -654,7 +670,9 @@ pub fn run() {
             history::clear_all_history,
             downloader::check_model_downloaded,
             downloader::download_model_files,
-            downloader::delete_model_files
+            downloader::delete_model_files,
+            get_onboarding_status,
+            complete_onboarding
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -676,4 +694,17 @@ fn set_window_focusable(window: tauri::Window, focusable: bool) -> Result<(), St
         let _ = window.set_focus();
     }
     Ok(())
+}
+
+#[tauri::command]
+fn get_onboarding_status(app_handle: AppHandle) -> bool {
+    let config = AppConfig::load(&app_handle);
+    config.onboarding_complete
+}
+
+#[tauri::command]
+fn complete_onboarding(app_handle: AppHandle) -> Result<(), String> {
+    let mut config = AppConfig::load(&app_handle);
+    config.onboarding_complete = true;
+    config.save(&app_handle)
 }

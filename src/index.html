@@ -410,6 +410,7 @@
                     <label class="form-row-label" for="provider-select">Refinement Provider</label>
                     <div class="select-wrapper">
                       <select id="provider-select" class="clean-select form-field-input">
+                        <option value="local_llm">Local LLM (Offline)</option>
                         <option value="gemini">Google Gemini (Cloud)</option>
                         <option value="openai">OpenAI GPT (Cloud)</option>
                         <option value="openrouter">OpenRouter (Cloud)</option>
@@ -509,6 +510,53 @@
                     </div>
                   </div>
 
+                  <!-- Local LLM Refinement Settings -->
+                  <div id="local-llm-settings" style="display: none;">
+                    <div class="form-row">
+                      <label class="form-row-label" for="local-refine-model-select">Refinement Model</label>
+                      <div class="select-wrapper">
+                        <select id="local-refine-model-select" class="clean-select form-field-input">
+                          <option value="qwen3_0_6b">Qwen3 0.6B (Default, ~500 MB)</option>
+                          <option value="qwen2_5_0_5b">Qwen2.5 0.5B (~400 MB)</option>
+                          <option value="gemma3_1b">Gemma 3 1B (~770 MB)</option>
+                          <option value="llama3_2_1b">Llama 3.2 1B (~770 MB)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="offline-active-model-card">
+                      <div class="offline-card-title">Refinement Model Status</div>
+                      <div class="model-status-row">
+                        <div class="model-status-info">
+                          <span class="model-name-label" id="refine-model-name-display">Qwen3 0.6B</span>
+                          <span class="model-status-badge" id="refine-model-status-badge">Not Downloaded</span>
+                        </div>
+                        <button class="action-btn" id="btn-download-refine-model" type="button">Download Model</button>
+                      </div>
+                      <!-- Refine Model Download Progress -->
+                      <div class="progress-container" id="refine-model-download-progress" style="display: none;">
+                        <div class="progress-header">
+                          <span class="progress-status" id="refine-download-status">Downloading...</span>
+                          <span class="progress-percent" id="refine-download-percent">0%</span>
+                        </div>
+                        <div class="progress-bar-track">
+                          <div class="progress-bar-fill" id="refine-download-bar" style="width: 0%;"></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="checkbox-setting-row">
+                        <div class="checkbox-setting-info">
+                          <span class="checkbox-title">Thinking Mode</span>
+                          <span class="checkbox-desc">Enable reasoning/thinking for Qwen3 models. Slower but may improve output quality.</span>
+                        </div>
+                        <label class="switch-toggle">
+                          <input type="checkbox" id="local-llm-thinking-checkbox" />
+                          <span class="switch-slider"></span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
                   <!-- Refinement Prompt -->
                   <div class="form-row" id="refine-prompt-group">
                     <label class="form-row-label" for="refine-prompt">AI Cleanup Instruction</label>
@@ -573,23 +621,23 @@
                   </div>
                 </div>
 
-                <!-- Models Management Tab Content -->
-                <div class="sub-tab-panel" id="sub-content-models">
+                               <div class="sub-tab-panel" id="sub-content-models">
                   <div class="model-manager-top">
                     <div class="model-manager-title">Local Models Manager</div>
                     <div class="model-manager-description">
-                      Manage offline model files for local transcription. Downloaded models can run fully offline, privately, and securely on your device.
+                      Manage offline model files for local transcription and refinement. Downloaded models run fully offline, privately, and securely on your device.
                     </div>
                   </div>
 
-                  <!-- Model List Container -->
+                  <!-- Transcription Models Section -->
+                  <div class="model-section-header">Transcription Models</div>
                   <div class="model-manager-list" id="model-manager-list">
                     <!-- Parakeet V3 -->
                     <div class="model-card" data-model-id="parakeet_v3">
                       <div class="model-card-header">
                         <div class="model-card-info">
                           <div class="model-card-name">Nvidia Parakeet V3</div>
-                          <div class="model-card-meta">Local Offline Engine | ~110 MB | Fast & accurate</div>
+                          <div class="model-card-meta">Local Offline Engine | ~110 MB | Fast &amp; accurate</div>
                         </div>
                         <div class="model-card-status">
                           <span class="model-status-badge not-downloaded" id="status-badge-parakeet_v3">Not Downloaded</span>
@@ -688,6 +736,115 @@
                       </div>
                     </div>
                   </div>
+
+                  <!-- Refinement Models Section -->
+                  <div class="model-section-header">Refinement Models</div>
+                  <div class="model-manager-list" id="refine-model-manager-list">
+                    <!-- Qwen3 0.6B -->
+                    <div class="model-card" data-model-id="qwen3_0_6b">
+                      <div class="model-card-header">
+                        <div class="model-card-info">
+                          <div class="model-card-name">Qwen3 0.6B</div>
+                          <div class="model-card-meta">Local LLM | ~500 MB | Default, fast refinement</div>
+                        </div>
+                        <div class="model-card-status">
+                          <span class="model-status-badge not-downloaded" id="status-badge-qwen3_0_6b">Not Downloaded</span>
+                        </div>
+                      </div>
+                      <div class="model-card-progress-container" id="progress-container-qwen3_0_6b" style="display: none;">
+                        <div class="progress-header">
+                          <span class="progress-status" id="progress-status-qwen3_0_6b">Downloading...</span>
+                          <span class="progress-percent" id="progress-percent-qwen3_0_6b">0%</span>
+                        </div>
+                        <div class="progress-bar-track">
+                          <div class="progress-bar-fill" id="progress-bar-qwen3_0_6b" style="width: 0%;"></div>
+                        </div>
+                      </div>
+                      <div class="model-card-actions">
+                        <button class="model-action-btn btn-download" id="btn-download-qwen3_0_6b" type="button">Download</button>
+                        <button class="model-action-btn btn-delete" id="btn-delete-qwen3_0_6b" style="display: none;" type="button">Delete</button>
+                      </div>
+                    </div>
+
+                    <!-- Qwen2.5 0.5B -->
+                    <div class="model-card" data-model-id="qwen2_5_0_5b">
+                      <div class="model-card-header">
+                        <div class="model-card-info">
+                          <div class="model-card-name">Qwen2.5 0.5B</div>
+                          <div class="model-card-meta">Local LLM | ~400 MB | Lightweight, proven quality</div>
+                        </div>
+                        <div class="model-card-status">
+                          <span class="model-status-badge not-downloaded" id="status-badge-qwen2_5_0_5b">Not Downloaded</span>
+                        </div>
+                      </div>
+                      <div class="model-card-progress-container" id="progress-container-qwen2_5_0_5b" style="display: none;">
+                        <div class="progress-header">
+                          <span class="progress-status" id="progress-status-qwen2_5_0_5b">Downloading...</span>
+                          <span class="progress-percent" id="progress-percent-qwen2_5_0_5b">0%</span>
+                        </div>
+                        <div class="progress-bar-track">
+                          <div class="progress-bar-fill" id="progress-bar-qwen2_5_0_5b" style="width: 0%;"></div>
+                        </div>
+                      </div>
+                      <div class="model-card-actions">
+                        <button class="model-action-btn btn-download" id="btn-download-qwen2_5_0_5b" type="button">Download</button>
+                        <button class="model-action-btn btn-delete" id="btn-delete-qwen2_5_0_5b" style="display: none;" type="button">Delete</button>
+                      </div>
+                    </div>
+
+                    <!-- Gemma 3 1B -->
+                    <div class="model-card" data-model-id="gemma3_1b">
+                      <div class="model-card-header">
+                        <div class="model-card-info">
+                          <div class="model-card-name">Gemma 3 1B</div>
+                          <div class="model-card-meta">Local LLM | ~770 MB | Google quality, balanced</div>
+                        </div>
+                        <div class="model-card-status">
+                          <span class="model-status-badge not-downloaded" id="status-badge-gemma3_1b">Not Downloaded</span>
+                        </div>
+                      </div>
+                      <div class="model-card-progress-container" id="progress-container-gemma3_1b" style="display: none;">
+                        <div class="progress-header">
+                          <span class="progress-status" id="progress-status-gemma3_1b">Downloading...</span>
+                          <span class="progress-percent" id="progress-percent-gemma3_1b">0%</span>
+                        </div>
+                        <div class="progress-bar-track">
+                          <div class="progress-bar-fill" id="progress-bar-gemma3_1b" style="width: 0%;"></div>
+                        </div>
+                      </div>
+                      <div class="model-card-actions">
+                        <button class="model-action-btn btn-download" id="btn-download-gemma3_1b" type="button">Download</button>
+                        <button class="model-action-btn btn-delete" id="btn-delete-gemma3_1b" style="display: none;" type="button">Delete</button>
+                      </div>
+                    </div>
+
+                    <!-- Llama 3.2 1B -->
+                    <div class="model-card" data-model-id="llama3_2_1b">
+                      <div class="model-card-header">
+                        <div class="model-card-info">
+                          <div class="model-card-name">Llama 3.2 1B</div>
+                          <div class="model-card-meta">Local LLM | ~770 MB | Meta quality, versatile</div>
+                        </div>
+                        <div class="model-card-status">
+                          <span class="model-status-badge not-downloaded" id="status-badge-llama3_2_1b">Not Downloaded</span>
+                        </div>
+                      </div>
+                      <div class="model-card-progress-container" id="progress-container-llama3_2_1b" style="display: none;">
+                        <div class="progress-header">
+                          <span class="progress-status" id="progress-status-llama3_2_1b">Downloading...</span>
+                          <span class="progress-percent" id="progress-percent-llama3_2_1b">0%</span>
+                        </div>
+                        <div class="progress-bar-track">
+                          <div class="progress-bar-fill" id="progress-bar-llama3_2_1b" style="width: 0%;"></div>
+                        </div>
+                      </div>
+                      <div class="model-card-actions">
+                        <button class="model-action-btn btn-download" id="btn-download-llama3_2_1b" type="button">Download</button>
+                        <button class="model-action-btn btn-delete" id="btn-delete-llama3_2_1b" style="display: none;" type="button">Delete</button>
+                      </div>
+                    </div>
+                  </div>
+                  </div>
                 </div>
               </div>
 
@@ -712,9 +869,53 @@
 
 
 
+      <!-- First-Run Onboarding Overlay -->
+      <div class="onboarding-overlay" id="onboarding-overlay" style="display: none;">
+        <div class="onboarding-card">
+          <div class="onboarding-header">
+            <svg class="brand-logo-svg" viewBox="0 0 100 100" width="48" height="48">
+              <line x1="24.5" y1="44" x2="24.5" y2="56" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" class="logo-left-line" />
+              <line x1="33" y1="37" x2="33" y2="63" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" class="logo-left-line" />
+              <line x1="41.5" y1="29" x2="41.5" y2="71" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" class="logo-left-line" />
+              <line x1="50" y1="20" x2="50" y2="80" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" class="logo-left-line" />
+              <line x1="55.5" y1="30" x2="68" y2="30" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-right-line" />
+              <line x1="55.5" y1="36.6" x2="76" y2="36.6" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-right-line" />
+              <line x1="55.5" y1="43.3" x2="80" y2="43.3" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-right-line" />
+              <line x1="55.5" y1="50" x2="69" y2="50" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-right-line" />
+              <line x1="55.5" y1="56.6" x2="82" y2="56.6" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-right-line" />
+              <line x1="55.5" y1="63.3" x2="73" y2="63.3" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-right-line" />
+              <line x1="55.5" y1="70" x2="62" y2="70" stroke="currentColor" stroke-width="5" stroke-linecap="round" class="logo-right-line" />
+            </svg>
+            <h2 class="onboarding-title">Welcome to Murmur</h2>
+            <p class="onboarding-subtitle">Choose how you want to get started</p>
+          </div>
+          <div class="onboarding-options" id="onboarding-options">
+            <button class="onboarding-option" id="onboarding-plug-play">
+              <span class="onboarding-option-icon">⚡</span>
+              <span class="onboarding-option-title">Plug &amp; Play</span>
+              <span class="onboarding-option-desc">Download offline AI models and start dictating immediately. No API keys or extra software needed.</span>
+              <span class="onboarding-option-meta">Downloads ~610 MB (Parakeet V3 + Qwen3 0.6B)</span>
+            </button>
+            <button class="onboarding-option" id="onboarding-custom">
+              <span class="onboarding-option-icon">⚙️</span>
+              <span class="onboarding-option-title">Custom Setup</span>
+              <span class="onboarding-option-desc">Configure your own providers — use Gemini, OpenAI, Ollama, or any combination you prefer.</span>
+              <span class="onboarding-option-meta">Requires API keys or local server</span>
+            </button>
+          </div>
+          <div class="onboarding-progress" id="onboarding-progress" style="display: none;">
+            <div class="onboarding-progress-title" id="onboarding-progress-title">Downloading models...</div>
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" id="onboarding-progress-bar" style="width: 0%;"></div>
+            </div>
+            <div class="onboarding-progress-status" id="onboarding-progress-status">Starting...</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Toast Alert Notification -->
       <div class="toast" id="toast-alert">
-        <span class="toast-icon">✨</span>
+        <span class="toast-icon" id="toast-icon">✨</span>
         <span class="toast-message" id="toast-text">Settings saved successfully</span>
       </div>
 

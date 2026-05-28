@@ -107,8 +107,31 @@ const inputLmStudioModel = document.getElementById("lm-studio-model");
 const groupLmStudioTranscription = document.getElementById("lm-studio-transcription-settings");
 const inputLmStudioTranscriptionUrl = document.getElementById("lm-studio-transcription-url");
 
+// Local LLM Refinement Elements
+const groupLocalLlm = document.getElementById("local-llm-settings");
+const selectLocalRefineModel = document.getElementById("local-refine-model-select");
+const checkboxLocalLlmThinking = document.getElementById("local-llm-thinking-checkbox");
+const btnDownloadRefineModel = document.getElementById("btn-download-refine-model");
+const badgeRefineModelStatus = document.getElementById("refine-model-status-badge");
+const labelRefineModelName = document.getElementById("refine-model-name-display");
+const containerRefineDownloadProgress = document.getElementById("refine-model-download-progress");
+const textRefineDownloadStatus = document.getElementById("refine-download-status");
+const textRefineDownloadPercent = document.getElementById("refine-download-percent");
+const barRefineDownloadProgress = document.getElementById("refine-download-bar");
+
+// Onboarding Elements
+const onboardingOverlay = document.getElementById("onboarding-overlay");
+const onboardingPlugPlay = document.getElementById("onboarding-plug-play");
+const onboardingCustom = document.getElementById("onboarding-custom");
+const onboardingOptions = document.getElementById("onboarding-options");
+const onboardingProgress = document.getElementById("onboarding-progress");
+const onboardingProgressBar = document.getElementById("onboarding-progress-bar");
+const onboardingProgressTitle = document.getElementById("onboarding-progress-title");
+const onboardingProgressStatus = document.getElementById("onboarding-progress-status");
+
 const toastAlert = document.getElementById("toast-alert");
 const toastText = document.getElementById("toast-text");
+const toastIcon = document.getElementById("toast-icon");
 
 const lastPreparedContainer = document.getElementById("last-prepared-container");
 const lastPreparedText = document.getElementById("last-prepared-text");
@@ -462,6 +485,7 @@ function updateSettingsVisibility() {
     groupOpenRouter.style.display = "none";
     groupCustomApi.style.display = "none";
     groupLmStudio.style.display = "none";
+    groupLocalLlm.style.display = "none";
     groupRefinePrompt.style.display = "block";
   } else if (refProvider === "openai") {
     groupGemini.style.display = "none";
@@ -470,6 +494,7 @@ function updateSettingsVisibility() {
     groupOpenRouter.style.display = "none";
     groupCustomApi.style.display = "none";
     groupLmStudio.style.display = "none";
+    groupLocalLlm.style.display = "none";
     groupRefinePrompt.style.display = "block";
   } else if (refProvider === "openrouter") {
     groupGemini.style.display = "none";
@@ -478,6 +503,7 @@ function updateSettingsVisibility() {
     groupOpenRouter.style.display = "block";
     groupCustomApi.style.display = "none";
     groupLmStudio.style.display = "none";
+    groupLocalLlm.style.display = "none";
     groupRefinePrompt.style.display = "block";
   } else if (refProvider === "custom") {
     groupGemini.style.display = "none";
@@ -486,6 +512,7 @@ function updateSettingsVisibility() {
     groupOpenRouter.style.display = "none";
     groupCustomApi.style.display = "block";
     groupLmStudio.style.display = "none";
+    groupLocalLlm.style.display = "none";
     groupRefinePrompt.style.display = "block";
   } else if (refProvider === "ollama") {
     groupGemini.style.display = "none";
@@ -494,6 +521,7 @@ function updateSettingsVisibility() {
     groupOpenRouter.style.display = "none";
     groupCustomApi.style.display = "none";
     groupLmStudio.style.display = "none";
+    groupLocalLlm.style.display = "none";
     groupRefinePrompt.style.display = "block";
   } else if (refProvider === "lm_studio") {
     groupGemini.style.display = "none";
@@ -502,7 +530,18 @@ function updateSettingsVisibility() {
     groupOpenRouter.style.display = "none";
     groupCustomApi.style.display = "none";
     groupLmStudio.style.display = "block";
+    groupLocalLlm.style.display = "none";
     groupRefinePrompt.style.display = "block";
+  } else if (refProvider === "local_llm") {
+    groupGemini.style.display = "none";
+    groupOllama.style.display = "none";
+    groupOpenAiRefine.style.display = "none";
+    groupOpenRouter.style.display = "none";
+    groupCustomApi.style.display = "none";
+    groupLmStudio.style.display = "none";
+    groupLocalLlm.style.display = "block";
+    groupRefinePrompt.style.display = "block";
+    checkRefineModelStatus();
   } else {
     // "none"
     groupGemini.style.display = "none";
@@ -511,6 +550,7 @@ function updateSettingsVisibility() {
     groupOpenRouter.style.display = "none";
     groupCustomApi.style.display = "none";
     groupLmStudio.style.display = "none";
+    groupLocalLlm.style.display = "none";
     groupRefinePrompt.style.display = "none";
   }
 
@@ -524,6 +564,63 @@ function updateSettingsVisibility() {
 selectTranscriptionProvider.addEventListener("change", updateSettingsVisibility);
 selectProvider.addEventListener("change", updateSettingsVisibility);
 selectLocalWhisperModel.addEventListener("change", checkOfflineModelStatus);
+selectLocalRefineModel.addEventListener("change", checkRefineModelStatus);
+
+// Refinement Model status check (for AI Settings card)
+const REFINE_MODEL_NAMES = {
+  qwen3_0_6b: "Qwen3 0.6B",
+  qwen2_5_0_5b: "Qwen2.5 0.5B",
+  gemma3_1b: "Gemma 3 1B",
+  llama3_2_1b: "Llama 3.2 1B",
+};
+
+async function checkRefineModelStatus() {
+  const modelId = selectLocalRefineModel.value;
+  const modelName = REFINE_MODEL_NAMES[modelId] || modelId;
+  labelRefineModelName.textContent = modelName;
+
+  try {
+    const isDownloaded = await invoke("check_model_downloaded", { modelId });
+    if (isDownloaded) {
+      badgeRefineModelStatus.textContent = "Ready";
+      badgeRefineModelStatus.className = "model-status-badge ready";
+      btnDownloadRefineModel.style.display = "none";
+    } else {
+      badgeRefineModelStatus.textContent = "Not Downloaded";
+      badgeRefineModelStatus.className = "model-status-badge not-downloaded";
+      btnDownloadRefineModel.style.display = "block";
+      btnDownloadRefineModel.textContent = "Download Model";
+      btnDownloadRefineModel.disabled = isDownloading;
+    }
+  } catch (err) {
+    console.error("Failed to check refine model status:", err);
+  }
+}
+
+btnDownloadRefineModel.addEventListener("click", async () => {
+  const modelId = selectLocalRefineModel.value;
+  if (!modelId) return;
+
+  isDownloading = true;
+  btnDownloadRefineModel.disabled = true;
+  btnDownloadRefineModel.style.display = "none";
+  badgeRefineModelStatus.textContent = "Downloading";
+  badgeRefineModelStatus.className = "model-status-badge downloading";
+  containerRefineDownloadProgress.style.display = "block";
+  textRefineDownloadStatus.textContent = "Starting download...";
+  textRefineDownloadPercent.textContent = "0%";
+  barRefineDownloadProgress.style.width = "0%";
+
+  try {
+    await invoke("download_model_files", { modelId });
+  } catch (err) {
+    isDownloading = false;
+    btnDownloadRefineModel.disabled = false;
+    btnDownloadRefineModel.style.display = "block";
+    showToast(`Download failed: ${err}`, true);
+    checkRefineModelStatus();
+  }
+});
 
 // Offline Model Manager status and download logic
 let isDownloading = false;
@@ -612,6 +709,16 @@ async function loadModelsManager() {
       console.error(`Failed to check model ${modelId} status:`, err);
     }
   }
+  // Also load refinement models
+  const refineModels = ["qwen3_0_6b", "qwen2_5_0_5b", "gemma3_1b", "llama3_2_1b"];
+  for (const modelId of refineModels) {
+    try {
+      const isDownloaded = await invoke("check_model_downloaded", { modelId });
+      updateModelCardUI(modelId, isDownloaded);
+    } catch (err) {
+      console.error(`Failed to check refine model ${modelId} status:`, err);
+    }
+  }
 }
 
 function updateModelCardUI(modelId, isDownloaded, isDownloading = false) {
@@ -693,7 +800,8 @@ async function deleteModelFromManager(modelId) {
 }
 
 function bindModelManagerEvents() {
-  const models = ["parakeet_v3", "whisper_tiny", "whisper_base", "whisper_small"];
+  const models = ["parakeet_v3", "whisper_tiny", "whisper_base", "whisper_small",
+                  "qwen3_0_6b", "qwen2_5_0_5b", "gemma3_1b", "llama3_2_1b"];
   models.forEach(modelId => {
     const btnDownload = document.getElementById(`btn-download-${modelId}`);
     const btnDelete = document.getElementById(`btn-delete-${modelId}`);
@@ -741,6 +849,7 @@ listen("model-download-progress", (event) => {
     showToast("Model downloaded successfully!");
     loadModelsManager();
     checkOfflineModelStatus();
+    checkRefineModelStatus();
   }
 
   // 2. Update AI Settings view elements if it's the active selected model
@@ -775,6 +884,30 @@ listen("model-download-progress", (event) => {
       btnDownloadModel.disabled = true;
     }
   }
+
+  // 3. Update Refinement Model status card in AI Settings if it matches the active model
+  const activeRefineModelId = selectLocalRefineModel.value;
+  if (modelId === activeRefineModelId && selectProvider.value === "local_llm") {
+    containerRefineDownloadProgress.style.display = "block";
+    badgeRefineModelStatus.textContent = "Downloading";
+    badgeRefineModelStatus.className = "model-status-badge downloading";
+    btnDownloadRefineModel.style.display = "none";
+
+    textRefineDownloadStatus.textContent = payload.status;
+    textRefineDownloadPercent.textContent = `${Math.round(payload.progress)}%`;
+    barRefineDownloadProgress.style.width = `${payload.progress}%`;
+
+    if (payload.progress >= 100.0 && payload.file_name === "") {
+      badgeRefineModelStatus.textContent = "Ready";
+      badgeRefineModelStatus.className = "model-status-badge ready";
+      btnDownloadRefineModel.style.display = "none";
+      setTimeout(() => {
+        if (!isDownloading) {
+          containerRefineDownloadProgress.style.display = "none";
+        }
+      }, 3000);
+    }
+  }
 });
 
 // Toast Manager
@@ -783,6 +916,9 @@ function showToast(message, isError = false) {
   toastAlert.className = "toast";
   if (isError) {
     toastAlert.classList.add("error");
+    toastIcon.textContent = "⚠️";
+  } else {
+    toastIcon.textContent = "✨";
   }
   toastAlert.classList.add("show");
   setTimeout(() => {
@@ -924,8 +1060,9 @@ async function autoSaveConfig() {
     lm_studio_url: inputLmStudioUrl.value.trim() || inputLmStudioTranscriptionUrl.value.trim(),
     lm_studio_model: inputLmStudioModel.value.trim(),
     transcribe_key: currentTranscribeKey,
-    notes_key: currentNotesKey,
     cancel_key: currentCancelKey,
+    local_refine_model: selectLocalRefineModel.value,
+    local_llm_thinking: checkboxLocalLlmThinking.checked,
   };
 
   try {
@@ -937,6 +1074,32 @@ async function autoSaveConfig() {
 
 // Save Settings Button Handler
 btnSaveSettings.addEventListener("click", async () => {
+  if (selectProvider.value === "local_llm") {
+    const modelId = selectLocalRefineModel.value;
+    try {
+      const isDownloaded = await invoke("check_model_downloaded", { modelId });
+      if (!isDownloaded) {
+        showToast("Please download the selected refinement model first!", true);
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  if (selectTranscriptionProvider.value === "local_parakeet") {
+    const modelId = "parakeet_v3";
+    try {
+      const isDownloaded = await invoke("check_model_downloaded", { modelId });
+      if (!isDownloaded) {
+        showToast("Please download the Nvidia Parakeet model first!", true);
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   await autoSaveConfig();
   showToast("Configurations saved successfully!");
 });
@@ -1029,6 +1192,121 @@ btnTestMic.addEventListener("click", () => {
   }
 });
 
+// Onboarding Flow
+function showOnboarding() {
+  onboardingOverlay.style.display = "flex";
+}
+
+function hideOnboarding() {
+  onboardingOverlay.style.display = "none";
+}
+
+let onboardingDownloadQueue = [];
+let onboardingCurrentIndex = 0;
+
+onboardingPlugPlay.addEventListener("click", async () => {
+  // Set config to offline providers
+  selectTranscriptionProvider.value = "local_parakeet";
+  selectProvider.value = "local_llm";
+  selectLocalRefineModel.value = "qwen3_0_6b";
+  updateSettingsVisibility();
+
+  // Check which models need downloading
+  onboardingDownloadQueue = [];
+  const parakeetReady = await invoke("check_model_downloaded", { modelId: "parakeet_v3" });
+  if (!parakeetReady) onboardingDownloadQueue.push("parakeet_v3");
+  const qwenReady = await invoke("check_model_downloaded", { modelId: "qwen3_0_6b" });
+  if (!qwenReady) onboardingDownloadQueue.push("qwen3_0_6b");
+
+  if (onboardingDownloadQueue.length === 0) {
+    // Both already downloaded — just complete
+    await autoSaveConfig();
+    await invoke("complete_onboarding");
+    hideOnboarding();
+    showToast("All models ready! You can start dictating.");
+    return;
+  }
+
+  // Show progress, hide options
+  onboardingOptions.style.display = "none";
+  onboardingProgress.style.display = "block";
+  onboardingCurrentIndex = 0;
+  startNextOnboardingDownload();
+});
+
+async function startNextOnboardingDownload() {
+  if (onboardingCurrentIndex >= onboardingDownloadQueue.length) {
+    // All done
+    onboardingProgressTitle.textContent = "Setup complete!";
+    onboardingProgressStatus.textContent = "All models downloaded. You're ready to go!";
+    onboardingProgressBar.style.width = "100%";
+
+    await autoSaveConfig();
+    await invoke("complete_onboarding");
+
+    setTimeout(() => {
+      hideOnboarding();
+      showToast("Setup complete! Start dictating with your hotkey.");
+      loadModelsManager();
+    }, 1500);
+    return;
+  }
+
+  const modelId = onboardingDownloadQueue[onboardingCurrentIndex];
+  const modelNames = { parakeet_v3: "Nvidia Parakeet V3 (Transcription)", qwen3_0_6b: "Qwen3 0.6B (Refinement)" };
+  const stepLabel = `(${onboardingCurrentIndex + 1}/${onboardingDownloadQueue.length})`;
+  onboardingProgressTitle.textContent = `Downloading ${modelNames[modelId] || modelId} ${stepLabel}`;
+  onboardingProgressStatus.textContent = "Starting...";
+  onboardingProgressBar.style.width = "0%";
+
+  try {
+    await invoke("download_model_files", { modelId });
+  } catch (err) {
+    onboardingProgressTitle.textContent = "Download failed";
+    onboardingProgressStatus.textContent = `Error: ${err}. You can download models later from Settings > Models.`;
+    setTimeout(async () => {
+      await invoke("complete_onboarding");
+      hideOnboarding();
+    }, 4000);
+  }
+}
+
+// Listen for progress events during onboarding
+listen("model-download-progress", (event) => {
+  const payload = event.payload;
+  if (onboardingOverlay.style.display === "flex" && onboardingProgress.style.display !== "none") {
+    const currentModelId = onboardingDownloadQueue[onboardingCurrentIndex];
+    if (payload.model_id === currentModelId) {
+      onboardingProgressStatus.textContent = payload.status;
+      onboardingProgressBar.style.width = `${payload.progress}%`;
+
+      if (payload.progress >= 100.0 && payload.file_name === "") {
+        onboardingCurrentIndex++;
+        setTimeout(() => startNextOnboardingDownload(), 500);
+      }
+    }
+  }
+});
+
+onboardingCustom.addEventListener("click", async () => {
+  await invoke("complete_onboarding");
+  hideOnboarding();
+
+  // Navigate to Settings > AI Settings tab
+  document.querySelectorAll(".menu-item").forEach((t) => t.classList.remove("active"));
+  tabSettings.classList.add("active");
+  document.querySelectorAll(".tab-content").forEach((c) => c.classList.remove("active"));
+  contentSettings.classList.add("active");
+
+  // Activate the AI Settings sub-tab
+  document.querySelectorAll(".sub-tab-trigger").forEach((t) => t.classList.remove("active"));
+  subTabAi.classList.add("active");
+  document.querySelectorAll(".sub-tab-panel").forEach((p) => p.classList.remove("active"));
+  subContentAi.classList.add("active");
+
+  showToast("Configure your providers and save when ready.");
+});
+
 // Load Config on Startup
 async function initConfig() {
   try {
@@ -1085,9 +1363,19 @@ async function initConfig() {
     currentTranscribeKey = config.transcribe_key || "Control";
     currentCancelKey = config.cancel_key || "Escape";
 
+    // Local LLM settings
+    selectLocalRefineModel.value = config.local_refine_model || "qwen3_0_6b";
+    checkboxLocalLlmThinking.checked = config.local_llm_thinking || false;
+
     renderVisualKeycapsFromKeyName(currentTranscribeKey, transcribeHotkeyDisplay);
     renderVisualKeycapsFromKeyName(currentCancelKey, cancelHotkeyDisplay);
     updateDashboardKeycaps(currentTranscribeKey);
+
+    // Check onboarding status
+    const onboardingDone = await invoke("get_onboarding_status");
+    if (!onboardingDone) {
+      showOnboarding();
+    }
   } catch (err) {
     showToast("Error loading saved configurations", true);
   }

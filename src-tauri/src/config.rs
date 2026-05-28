@@ -50,6 +50,12 @@ pub struct AppConfig {
     pub transcribe_key: String,
     #[serde(default = "default_cancel_key")]
     pub cancel_key: String,
+    #[serde(default = "default_local_refine_model")]
+    pub local_refine_model: String,
+    #[serde(default = "default_onboarding_complete")]
+    pub onboarding_complete: bool,
+    #[serde(default = "default_local_llm_thinking")]
+    pub local_llm_thinking: bool,
 }
 
 fn default_transcribe_key() -> String {
@@ -58,6 +64,18 @@ fn default_transcribe_key() -> String {
 
 fn default_cancel_key() -> String {
     "Escape".to_string()
+}
+
+fn default_local_refine_model() -> String {
+    "qwen3_0_6b".to_string()
+}
+
+fn default_onboarding_complete() -> bool {
+    false
+}
+
+fn default_local_llm_thinking() -> bool {
+    false
 }
 
 fn default_model() -> String {
@@ -162,6 +180,9 @@ impl AppConfig {
             lm_studio_model: "".to_string(),
             transcribe_key: "Control".to_string(),
             cancel_key: "Escape".to_string(),
+            local_refine_model: "qwen3_0_6b".to_string(),
+            onboarding_complete: false,
+            local_llm_thinking: false,
         }
     }
 
