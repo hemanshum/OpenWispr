@@ -99,10 +99,10 @@
           </nav>
           <div class="sidebar-spacer"></div>
           <div class="dark-mode-toggle-row" id="dark-mode-toggle-row">
-            <svg class="dark-mode-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="dark-mode-icon" id="dark-mode-icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
             </svg>
-            <span class="dark-mode-label">Dark</span>
+            <span class="dark-mode-label" id="dark-mode-label-text">Dark</span>
             <label class="switch-toggle dark-mode-switch">
               <input type="checkbox" id="dark-mode-checkbox" />
               <span class="switch-slider"></span>
@@ -209,6 +209,26 @@
                     <span class="stat-label">day streak</span>
                   </div>
 
+                </div>
+
+                <!-- Active config info card -->
+                <div class="card-item config-info-card" id="config-info-card">
+                  <div class="config-info-header">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="16" x2="12" y2="12"></line>
+                      <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <span>Active Configuration</span>
+                  </div>
+                  <div class="config-info-row">
+                    <span class="config-info-label">Transcription</span>
+                    <span class="config-info-value" id="config-info-transcription">—</span>
+                  </div>
+                  <div class="config-info-row">
+                    <span class="config-info-label">Refinement</span>
+                    <span class="config-info-value" id="config-info-refinement">—</span>
+                  </div>
                 </div>
 
 

@@ -690,6 +690,53 @@ body {
   color: var(--text-secondary);
 }
 
+/* Active Configuration Info Card */
+.config-info-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.config-info-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.config-info-header svg {
+  opacity: 0.5;
+}
+
+.config-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-info-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.config-info-value {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent-orange);
+  background: var(--accent-orange-light);
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 
 .voice-profile-card {

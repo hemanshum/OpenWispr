@@ -594,6 +594,12 @@ function updatePerformanceAdvisor() {
     badge.textContent = "Moderate";
     desc.innerHTML = `Transcription via <strong>${transName}</strong> and refinement via <strong>${refName}</strong>.`;
   }
+
+  // Update the Active Configuration info card on the dashboard
+  const configTransEl = document.getElementById("config-info-transcription");
+  const configRefEl = document.getElementById("config-info-refinement");
+  if (configTransEl) configTransEl.textContent = transName;
+  if (configRefEl) configRefEl.textContent = refName;
 }
 
 // Update visibility of setting blocks based on selected providers
@@ -2139,14 +2145,27 @@ async function init() {
 // =====================
 function initDarkMode() {
   const darkModeCheckbox = document.getElementById("dark-mode-checkbox");
+  const iconSvg = document.getElementById("dark-mode-icon-svg");
+  const labelText = document.getElementById("dark-mode-label-text");
   const savedTheme = localStorage.getItem("murmur_theme") || "light";
+
+  // SVG paths for moon (dark) and sun (light)
+  const moonPath = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+  const sunPath = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+
+  function updateThemeUI(isDark) {
+    if (iconSvg) iconSvg.innerHTML = isDark ? moonPath : sunPath;
+    if (labelText) labelText.textContent = isDark ? "Dark" : "Light";
+  }
 
   if (savedTheme === "dark") {
     document.documentElement.setAttribute("data-theme", "dark");
     if (darkModeCheckbox) darkModeCheckbox.checked = true;
+    updateThemeUI(true);
   } else {
     document.documentElement.removeAttribute("data-theme");
     if (darkModeCheckbox) darkModeCheckbox.checked = false;
+    updateThemeUI(false);
   }
 
   if (darkModeCheckbox) {
@@ -2154,9 +2173,11 @@ function initDarkMode() {
       if (darkModeCheckbox.checked) {
         document.documentElement.setAttribute("data-theme", "dark");
         localStorage.setItem("murmur_theme", "dark");
+        updateThemeUI(true);
       } else {
         document.documentElement.removeAttribute("data-theme");
         localStorage.setItem("murmur_theme", "light");
+        updateThemeUI(false);
       }
     });
   }

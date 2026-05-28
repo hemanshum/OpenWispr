@@ -1011,6 +1011,7 @@ pub async fn refine_with_local_llm(
         return Err(format!("llama-cli failed: {}", diag));
     }
 
+    #[cfg(debug_assertions)]
     eprintln!("[DEBUG] stdout_raw ({} bytes): {:?}", stdout_raw.len(), &stdout_raw[..stdout_raw.len().min(500)]);
 
     let mut result = stdout_raw.trim().to_string();
@@ -1086,6 +1087,7 @@ pub async fn refine_with_local_llm(
     result = clean_lines.join("\n");
 
     let final_result = result.trim().to_string();
+    #[cfg(debug_assertions)]
     eprintln!("[DEBUG] Final result ({} chars): {:?}", final_result.len(), &final_result[..final_result.len().min(200)]);
     
     if final_result.is_empty() {
